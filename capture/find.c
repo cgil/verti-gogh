@@ -41,6 +41,6 @@ int main(int argc, char *argv[]) {
 
   int row, col;
   findmin(&row, &col);
-  printf("1 %d %d\n", row, col);
+  printf("0 %d %d\n", row, col);
   return 0;
 }

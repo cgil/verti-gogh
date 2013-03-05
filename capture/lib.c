@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 
 #include "lib.h"
 
@@ -58,7 +59,7 @@ void findmin(int *row, int *col) {
   int i, j;
   
   int mini = 0, minj = 0;
-  int min = 10000000;
+  int min = INT_MAX;
   int windows[WIDTH - SIZE];
   for (i = 0; i < WIDTH - SIZE; i++)
     windows[i] = 0;

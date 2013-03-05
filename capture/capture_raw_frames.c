@@ -66,7 +66,7 @@ static void process_image(void *p, int size) {
 
   int row, col;
   findmin(&row, &col);
-  printf("1 %d %d\n", row, col);
+  printf("0 %d %d\n", row, col);
 }
 
 static int read_frame(void) {
@@ -292,8 +292,8 @@ static void init_device(void) {
   /* Preserve original settings as set by v4l2-ctl for example */
   if (-1 == xioctl(fd, VIDIOC_G_FMT, &fmt))
     errno_exit("VIDIOC_G_FMT");
-  printf("size: %dx%d\n", fmt.fmt.pix.width, fmt.fmt.pix.height);
-  printf("fmt: %.4s\n", (char*) &fmt.fmt.pix.pixelformat);
+  fprintf(stderr, "size: %dx%d\n", fmt.fmt.pix.width, fmt.fmt.pix.height);
+  fprintf(stderr, "fmt: %.4s\n", (char*) &fmt.fmt.pix.pixelformat);
   assert(fmt.fmt.pix.width == WIDTH);
   assert(fmt.fmt.pix.height == HEIGHT);
   assert(fmt.fmt.pix.pixelformat = 0x56595559);
