@@ -13,3 +13,5 @@ capture: build/capture_raw_frames.o build/lib.o
 
 clean:
 	rm -rf build find capture
+
+-include build/find.d biuld/lib.d build/capture_raw_frames.d
