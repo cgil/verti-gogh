@@ -3,9 +3,12 @@
 
 #include <sys/time.h>
 
-#define R 0x00
-#define G 0x39
-#define B 0x89
+#define WIDTH 320
+#define HEIGHT 240
+
+#define R 0xff
+#define G 0x00
+#define B 0x00
 #define SIZE 20
 
 /* http://en.wikipedia.org/wiki/YCbCr */
