@@ -10,7 +10,7 @@ void reset() {
   nxt = 0;
 }
 
-#define process(XC, YC, ZC, R, G, B)                    \
+#define process(XC, YC, ZC, X, Y, Z)                    \
   int window[SIZE];                                     \
   int i;                                                \
   unsigned char *buf = _buf;                            \
@@ -18,9 +18,9 @@ void reset() {
   for (i = 0; i < SIZE; i++)                            \
     window[i] = 0;                                      \
   for (i = 0; i < WIDTH; i++) {                         \
-    int x = XC(i, buf) - R;                             \
-    int y = YC(i, buf) - G;                             \
-    int z = ZC(i, buf) - B;                             \
+    int x = XC(i, buf) - X;                             \
+    int y = YC(i, buf) - Y;                             \
+    int z = ZC(i, buf) - Z;                             \
     int mag = x * x + y * y + z * z;                    \
     sum += mag - window[i % SIZE];                      \
     window[i % SIZE] = mag;                             \
