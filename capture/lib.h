@@ -9,7 +9,7 @@
 #define R 0xff
 #define G 0x00
 #define B 0x00
-#define SIZE 20
+#define SIZE 10
 
 /* http://en.wikipedia.org/wiki/YCbCr */
 #define Y  ((int) (16 + 65.481 * R + 128.553 * G + 24.966 * B))
