@@ -67,6 +67,7 @@ static void process_image(void *p, int size) {
   int row, col;
   findmin(&row, &col);
   printf("0 %d %d\n", row, col);
+  fflush(stdout);
 }
 
 static int read_frame(void) {
