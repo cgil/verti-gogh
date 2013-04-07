@@ -5,12 +5,13 @@ Created on Mar 4, 2013
 '''
 
 import sys
+import time
 
 from Classes import Car
 from Classes import VertCanvas
 from Tkinter import Tk, BOTH, tkinter
 from random import randint
-import subprocess
+from subprocess import Popen, PIPE, STDOUT
 
 root = Tk()
 width = 1024
@@ -19,62 +20,79 @@ root.geometry(str(width)+"x"+str(height))
 canvas = VertCanvas.VertCanvas(root)
 cars = []
 for i in range(1) :
-    cars.append(Car.Car(i,randint(1,width),randint(1,height), canvas))
+  cars.append(Car.Car(i,randint(1,width),randint(1,height), canvas))
 
 topx, topy, botx, boty = 0, 0, 0, 0
 
-def draw():
-    for car in cars :
-        car.addPoint(randint(1,width), randint(1,height))
-        car.display()
-    canvas.pack(fill=BOTH, expand=1)
-    root.after(1000, draw)
+def clear():
+  canvas.canvas.create_polygon(0, 0, width, 0, width, height, 0, height,
+                               fill='white')
 
-def circle(x, y, rad):
-  canvas.canvas.create_oval(x - rad, y - rad, x + rad, y + rad, fill='black')
+def circle(x, y, rad, color):
+  canvas.canvas.create_oval(x - rad, y - rad, x + rad, y + rad,
+                            fill=color, outline=color)
 
-def drawcorners():
-    rad = 10
-    circle(rad, rad, rad)
-    circle(width - rad, rad, rad)
-    circle(rad, height - rad, rad)
-    circle(width - rad, height - rad, rad)
-    canvas.pack(fill=BOTH, expand=1)
-    root.after(1000, calibrate)
+colors = []
+buckets = []
+color = None
+proc = None
 
-def trans(x, y):
-    return (width * (x - topx) / (botx - topx),
-            height * (y - topy) / (boty - topy))
+def calibrate_start():
+  global proc
+  proc = Popen(['./capture/ping'], stdout=PIPE, stdin=PIPE, stderr=None)
+  calibrate()
 
 def calibrate():
-    global topx, topy, botx, boty
-    output = subprocess.check_output(["./capture/calibrate_raw_frame"])
-    c1, c2, c3, c4, _ = output.split("\n")
-    c1x, c1y = c1.split(' ')
-    c2x, c2y = c2.split(' ')
-    c3x, c3y = c3.split(' ')
-    c4x, c4y = c4.split(' ')
+  global colors, buckets, color
+  print colors, buckets
+  for i, clrs in enumerate(colors):
+    if len(clrs) >= 3:
+      print "found at ", buckets[i][0], buckets[i][1]
+      proc.terminate()
+      proc.wait()
+      return
 
-    topx = (int(c1x) + int(c3x)) / 2
-    topy = (int(c1y) + int(c2y)) / 2
-    botx = (int(c2x) + int(c4x)) / 2
-    boty = (int(c3y) + int(c4y)) / 2
+  color = '%06x' % randint(0, (1 << 24) - 1)
+  clear()
+  circle(width / 2, height / 2, 50, '#' + color)
+  canvas.pack(fill=BOTH, expand=1)
+  root.after(1000, check)
 
-    # TODO: run capture raw frames and hook it up to readappend
+def check():
+  global colors, buckets, proc
+  proc.poll()
+  if proc.returncode != None and proc.returncode != 0:
+    print("bad return code", proc.returncode)
+    raise 'oh no'
+
+  proc.stdin.write('0x' + color + "\n")
+  x, y = proc.stdout.readline()[:-1].split(' ')
+
+  appended = False
+  for i, bkt in enumerate(buckets):
+    dx = bkt[0] - int(x)
+    dy = bkt[1] - int(y)
+    d = dx * dx + dy * dy
+    if d < 4:
+      colors[i].append(color)
+      appended = True
+      break
+  if not appended:
+    colors.append([color])
+    buckets.append([int(x), int(y)])
+
+  calibrate()
+
+
 
 def readappend(fh, _):
-    mystr = sys.stdin.readline()
-    print mystr
-    idx, row, col = mystr.split(' ')
-    cars[int(idx)].addPoint(int(row), int(col))
-    cars[int(idx)].display()
-    canvas.pack(fill=BOTH, expand=1)
+  mystr = sys.stdin.readline()
+  print mystr
+  idx, row, col = mystr.split(' ')
+  cars[int(idx)].addPoint(int(row), int(col))
+  cars[int(idx)].display()
+  canvas.pack(fill=BOTH, expand=1)
 
-if len(sys.argv) > 1 and sys.argv[1] == 'rand':
-  root.after(1000, draw)
-# else:
-# root.tk.createfilehandler(sys.stdin, tkinter.READABLE,
-#                           readappend)
-root.after(10, drawcorners)
+root.after(10, calibrate_start)
 
 root.mainloop()

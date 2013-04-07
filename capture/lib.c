@@ -70,7 +70,7 @@ void process_yuv(void *_buf, int amt) {
 
 int elapsed(struct timeval *start, struct timeval *end) {
   return (((end->tv_sec - start->tv_sec) * 1000000) +
-                  (end->tv_usec - start->tv_usec))/1000;
+         (end->tv_usec - start->tv_usec))/1000;
 }
 
 void findmin(int *row, int *col) {

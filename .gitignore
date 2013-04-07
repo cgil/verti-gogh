@@ -1,1 +1,9 @@
 *.pyc
+capture/calibrate
+capture/calibrate_raw
+capture/find
+capture/capture_raw_frames
+capture/build
+capture/ping
+capture/yuyv
+capture/find_yuyv

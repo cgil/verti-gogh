@@ -1,5 +1,5 @@
 CFLAGS += -Wall -Wextra -Werror -Wno-unused-parameter -O2
-PROGS = find calibrate calibrate_raw capture_raw_frames ping
+PROGS = find calibrate calibrate_raw capture_raw_frames ping yuyv find_yuyv
 LIBS = raw lib
 
 all: $(PROGS)
