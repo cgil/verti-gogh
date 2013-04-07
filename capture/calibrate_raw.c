@@ -5,11 +5,8 @@
 #include "raw.h"
 
 static int process_image() {
-  int row, col;
-  findmin(&row, &col);
-  printf("0 %d %d\n", row, col);
-  fflush(stdout);
-  return 1; /* keep going */
+  calibrate();
+  return 0; /* stop */
 }
 
 int main(int argc, char **argv) {

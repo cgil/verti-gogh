@@ -26,6 +26,7 @@
 #include <linux/videodev2.h>
 
 #include "lib.h"
+#include "raw.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -54,6 +55,18 @@ static int xioctl(int fh, int request, void *arg) {
   return r;
 }
 
+static int process_image(processor_t *proc, void *p, int size) {
+  assert(size == WIDTH * HEIGHT * 2);
+  reset();
+
+  char *buf = p;
+  int i;
+  for (i = 0; i < HEIGHT; i++) {
+    process_yuv(buf + i * WIDTH * 2, WIDTH * 2);
+  }
+  return proc();
+}
+
 static int read_frame(processor_t *p) {
   struct v4l2_buffer buf;
 
@@ -75,7 +88,7 @@ static int read_frame(processor_t *p) {
 
   assert(buf.index < n_buffers);
 
-  int ret = p(buffers[buf.index].start, buf.bytesused);
+  int ret = process_image(p, buffers[buf.index].start, buf.bytesused);
 
   if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
     errno_exit("VIDIOC_QBUF");
@@ -326,7 +339,7 @@ static void open_device(void) {
   }
 }
 
-int process_raw(processor_t *p) {
+void process_raw(processor_t *p) {
   dev_name = "/dev/video0";
 
   open_device();
@@ -336,5 +349,4 @@ int process_raw(processor_t *p) {
   stop_capturing();
   uninit_device();
   close_device();
-  return 0;
 }
