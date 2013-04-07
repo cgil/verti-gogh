@@ -27,7 +27,6 @@ func main() {
       cbi := (j & 0xfffffffe) * 2 + 1
       cri := (j & 0xfffffffe) * 2 + 3
 
-      println(i, j, ":", yi, cbi, cri)
       color := color.YCbCr{ Y: buf[yi], Cb: buf[cbi], Cr: buf[cri] }
       im.Set(int(j), i, color)
     }

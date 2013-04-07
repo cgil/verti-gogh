@@ -21,9 +21,35 @@ void set_target(int r, int g, int b) {
   B = b;
 
   /* http://en.wikipedia.org/wiki/YCbCr */
-  Y = (int) (0.299 * R + 0.587 * G + 0.114 * B);
-  Cb = (int) (128 - 0.168736 * R - 0.331264 * G + 0.5 * B);
-  Cr = (int) (128 + 0.5 * R - 0.418688 * G - 0.081312 * B);
+  /* http://golang.org/src/pkg/image/color/ycbcr.go */
+  /* Y = (int) (0.299 * R + 0.587 * G + 0.114 * B); */
+  /* Cb = (int) (128 - 0.168736 * R - 0.331264 * G + 0.5 * B); */
+  /* Cr = (int) (128 + 0.5 * R - 0.418688 * G - 0.081312 * B); */
+  int r1 = r;
+  int g1 = g;
+  int b1 = b;
+  int yy = (19595*r1 + 38470*g1 + 7471*b1 + (1<<15)) >> 16;
+  int cb = (-11056*r1 - 21712*g1 + 32768*b1 + (257<<15)) >> 16;
+  int cr = (32768*r1 - 27440*g1 - 5328*b1 + (257<<15)) >> 16;
+  if (yy < 0) {
+    yy = 0;
+  } else if (yy > 255) {
+    yy = 255;
+  }
+  if (cb < 0) {
+    cb = 0;
+  } else if (cb > 255) {
+    cb = 255;
+  }
+  if (cr < 0) {
+    cr = 0;
+  } else if (cr > 255) {
+    cr = 255;
+  }
+  Y = yy;
+  Cb = cb;
+  Cr = cr;
+  /* return uint8(yy), uint8(cb), uint8(cr) */
 }
 
 void reset() {

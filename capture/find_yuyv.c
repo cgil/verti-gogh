@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
   FILE *f = fopen(argv[1], "r");
   assert(f != NULL);
 
-  set_target(0x4B, 0x00, 0x82);
+  set_target(0xff, 0x00, 0x00);
 
   int i;
   char buf[WIDTH * 2];
