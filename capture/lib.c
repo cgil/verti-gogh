@@ -1,10 +1,11 @@
 #include <assert.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include "lib.h"
 
 static int nxt;
-static int buffer[HEIGHT][WIDTH];
+int buffer[HEIGHT][WIDTH];
 
 void reset() {
   nxt = 0;
@@ -49,7 +50,7 @@ void process_yuv(void *_buf, int amt) {
 }
 
 int elapsed(struct timeval *start, struct timeval *end) {
-  return (((end->tv_sec - start->tv_sec) * 1000000) + 
+  return (((end->tv_sec - start->tv_sec) * 1000000) +
                   (end->tv_usec - start->tv_usec))/1000;
 }
 
@@ -57,7 +58,7 @@ void findmin(int *row, int *col) {
   assert(nxt == HEIGHT);
 
   int i, j;
-  
+
   int mini = 0, minj = 0;
   int min = INT_MAX;
   int windows[WIDTH - SIZE];
@@ -78,4 +79,54 @@ void findmin(int *row, int *col) {
   }
   *row = mini;
   *col = minj;
+}
+
+void calibrate() {
+  int i, j, k;
+
+  int windows[WIDTH - SIZE];
+  for (i = 0; i < WIDTH - SIZE; i++)
+    windows[i] = 0;
+
+  struct {
+    int x;
+    int y;
+    int score;
+  } corners[4];
+  for (i = 0; i < 4; i++)
+    corners[i].score = INT_MAX;
+  corners[0].x = 0;
+  corners[0].y = 0;
+  corners[1].x = WIDTH;
+  corners[1].y = 0;
+  corners[2].x = 0;
+  corners[2].y = HEIGHT;
+  corners[3].x = WIDTH;
+  corners[3].y = HEIGHT;
+
+  for (i = 0; i < HEIGHT; i++) {
+    for (j = 0; j < WIDTH - SIZE; j++) {
+      if (i >= SIZE) {
+        int pix = windows[j];
+
+        for (k = 0; k < 4; k++) {
+          if (pix < corners[k].score) {
+            int xdiff = corners[k].x - j;
+            int ydiff = corners[k].y - i;
+            if (xdiff * xdiff + ydiff * ydiff < DIST * DIST) {
+              corners[k].x = j;
+              corners[k].y = i;
+              corners[k].score = pix;
+            }
+          }
+        }
+        windows[j] -= buffer[i - SIZE][j];
+      }
+      windows[j] += buffer[i][j];
+    }
+  }
+
+  for (i = 0; i < 4; i++) {
+    printf("%d %d\n", corners[i].x, corners[i].y);
+  }
 }
