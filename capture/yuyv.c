@@ -59,7 +59,7 @@ static int process_image(void *p, int size) {
   FILE *f = fopen("image.yuv", "w");
   assert(f != NULL);
   int ret = fwrite(p, size, 1, f);
-  assert(ret == size);
+  assert(ret == 1);
   fclose(f);
   return 0;
 }

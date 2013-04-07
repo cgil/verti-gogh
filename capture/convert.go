@@ -23,17 +23,13 @@ func main() {
     if n != len(buf) { panic("short read") }
 
     for j := uint(0); j < WIDTH; j++ {
-      r, g, b := color.YCbCrToRGB(
-        buf[j * 2],
-        buf[(j & 0xfffffffe) + 1],
-        buf[(j & 0xfffffffe) + 3])
-      rgb := color.RGBA {
-        R: r,
-        G: g,
-        B: b,
-        A: 1,
-      }
-      im.SetRGBA(int(j), i, rgb)
+      yi := j * 2;
+      cbi := (j & 0xfffffffe) * 2 + 1
+      cri := (j & 0xfffffffe) * 2 + 3
+
+      println(i, j, ":", yi, cbi, cri)
+      color := color.YCbCr{ Y: buf[yi], Cb: buf[cbi], Cr: buf[cri] }
+      im.Set(int(j), i, color)
     }
   }
 
