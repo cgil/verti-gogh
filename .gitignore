@@ -7,3 +7,11 @@ capture/build
 capture/ping
 capture/yuyv
 capture/find_yuyv
+capture/convert
+
+
+*.png
+*.yuv
+*.raw
+*.jpg
+*.jpeg
