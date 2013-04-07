@@ -28,7 +28,7 @@ static int process_image() {
 
 int main(int argc, char **argv) {
   if (argc > 1) {
-    int c = atoi(argv[1]);
+    int c = strtol(argv[1], NULL, 16);
     set_target((c & 0x00ff0000) >> 16,
                (c & 0x0000ff00) >>  8,
                (c & 0x000000ff) >>  0);
