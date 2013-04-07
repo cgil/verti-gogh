@@ -1,6 +1,6 @@
 calibrate
 calibrate_raw
 find
-capture
+capture_raw_frames
 build
-
+ping
