@@ -18,7 +18,7 @@ capture: build/capture_raw_frames.o build/lib.o build/raw.o
 	$(CC) -o $@ $^
 
 clean:
-	rm -rf build find capture
+	rm -rf build $(shell find . -type f -perm +100)
 
--include build/find.d biuld/lib.d build/capture_raw_frames.d build/calibrate.d \
+-include build/find.d build/lib.d build/capture_raw_frames.d build/calibrate.d \
 	 build/raw.d
