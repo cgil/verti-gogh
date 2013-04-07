@@ -19,9 +19,9 @@ static int process_image() {
 
   /* wait on stdin for something to happen */
   char buf[1024];
-  size_t ret = fread(buf, 1, sizeof(buf), stdin);
-
-  if (strncmp(buf, "stop\n", ret) == 0)
+  if (fgets(buf, sizeof(buf), stdin) == NULL)
+    return 0;
+  if (strcmp(buf, "stop\n") == 0)
     return 0;
   return 1;
 }
