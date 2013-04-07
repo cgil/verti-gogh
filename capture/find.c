@@ -35,7 +35,6 @@ void decode(char *filename) {
 }
 
 int main(int argc, char *argv[]) {
-  printf("%d %d %d\n", Y, Cr, Cb);
   assert(argc > 1);
   reset();
   decode(argv[1]);

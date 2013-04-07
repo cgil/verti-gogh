@@ -4,8 +4,27 @@
 
 #include "lib.h"
 
+static int R = 0;
+static int G = 0;
+static int B = 0;
+
+static int Y = 0;
+static int Cb = 0;
+static int Cr = 0;
+
 static int nxt;
 int buffer[HEIGHT][WIDTH];
+
+void set_target(int r, int g, int b) {
+  R = r;
+  G = g;
+  B = b;
+
+  /* http://en.wikipedia.org/wiki/YCbCr */
+  Y = (int) (0.299 * R + 0.587 * G + 0.114 * B);
+  Cb = (int) (128 - 0.168736 * R - 0.331264 * G + 0.5 * B);
+  Cr = (int) (128 + 0.5 * R - 0.418688 * G - 0.081312 * B);
+}
 
 void reset() {
   nxt = 0;
