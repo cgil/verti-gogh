@@ -46,7 +46,7 @@ def calibrate():
   global colors, buckets, color
   print colors, buckets
   for i, clrs in enumerate(colors):
-    if len(clrs) >= 3:
+    if len(clrs) >= 5:
       print "found at ", buckets[i][0], buckets[i][1]
       proc.terminate()
       proc.wait()
@@ -56,7 +56,7 @@ def calibrate():
   clear()
   circle(width / 2, height / 2, 50, '#' + color)
   canvas.pack(fill=BOTH, expand=1)
-  root.after(1000, check)
+  root.after(400, check)
 
 def check():
   global colors, buckets, proc

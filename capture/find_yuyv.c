@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
   FILE *f = fopen(argv[1], "r");
   assert(f != NULL);
 
-  set_target(0xff, 0x00, 0x00);
+  set_target(0x3a, 0x97, 0xd2);
 
   int i;
   char buf[WIDTH * 2];
@@ -21,6 +21,6 @@ int main(int argc, char *argv[]) {
 
   int row, col;
   findmin(&row, &col);
-  printf("0 %d %d\n", row, col);
+  printf("0 %d %d\n", col, row);
   return 0;
 }

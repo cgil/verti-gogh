@@ -1,73 +1,42 @@
 #include <assert.h>
+#include <math.h>
 #include <limits.h>
 #include <stdio.h>
 
 #include "lib.h"
+#include "colorspace.h"
 
-static int R = 0;
-static int G = 0;
-static int B = 0;
-
-static int Y = 0;
-static int Cb = 0;
-static int Cr = 0;
+static double H = 0;
+static double S = 0;
+static double L = 0;
 
 static int nxt;
-int buffer[HEIGHT][WIDTH];
+double buffer[HEIGHT][WIDTH];
 
 void set_target(int r, int g, int b) {
-  R = r;
-  G = g;
-  B = b;
-
-  /* http://en.wikipedia.org/wiki/YCbCr */
-  /* http://golang.org/src/pkg/image/color/ycbcr.go */
-  /* Y = (int) (0.299 * R + 0.587 * G + 0.114 * B); */
-  /* Cb = (int) (128 - 0.168736 * R - 0.331264 * G + 0.5 * B); */
-  /* Cr = (int) (128 + 0.5 * R - 0.418688 * G - 0.081312 * B); */
-  int r1 = r;
-  int g1 = g;
-  int b1 = b;
-  int yy = (19595*r1 + 38470*g1 + 7471*b1 + (1<<15)) >> 16;
-  int cb = (-11056*r1 - 21712*g1 + 32768*b1 + (257<<15)) >> 16;
-  int cr = (32768*r1 - 27440*g1 - 5328*b1 + (257<<15)) >> 16;
-  if (yy < 0) {
-    yy = 0;
-  } else if (yy > 255) {
-    yy = 255;
-  }
-  if (cb < 0) {
-    cb = 0;
-  } else if (cb > 255) {
-    cb = 255;
-  }
-  if (cr < 0) {
-    cr = 0;
-  } else if (cr > 255) {
-    cr = 255;
-  }
-  Y = yy;
-  Cb = cb;
-  Cr = cr;
-  /* return uint8(yy), uint8(cb), uint8(cr) */
+  Rgb2Hsl(&H, &S, &L, r / 255.0, g / 255.0, b / 255.0);
 }
 
 void reset() {
   nxt = 0;
 }
 
-#define process(XC, YC, ZC, X, Y, Z)                    \
-  int window[SIZE];                                     \
+#define process(FETCH)                                  \
+  double window[SIZE];                                  \
   int i;                                                \
   unsigned char *buf = _buf;                            \
-  int sum = 0;                                          \
+  double sum = 0;                                          \
   for (i = 0; i < SIZE; i++)                            \
     window[i] = 0;                                      \
   for (i = 0; i < WIDTH; i++) {                         \
-    int x = XC(i, buf) - X;                             \
-    int y = YC(i, buf) - Y;                             \
-    int z = ZC(i, buf) - Z;                             \
-    int mag = x * x + y * y + z * z;                    \
+    double r, g, b;                                     \
+    FETCH;                                              \
+    double h, s, l;                                     \
+    Rgb2Hsl(&h, &s, &l, r, g, b);                       \
+    double x = h - H;                                   \
+    double y = s - S;                                   \
+    double z = l - L;                                   \
+    double mag = x * x + y * y + z * z;                 \
     sum += mag - window[i % SIZE];                      \
     window[i % SIZE] = mag;                             \
     if (i >= SIZE) {                                    \
@@ -76,22 +45,27 @@ void reset() {
   }                                                     \
   nxt++;
 
-#define RC(i, buf) buf[i * 3 + 0]
-#define GC(i, buf) buf[i * 3 + 1]
-#define BC(i, buf) buf[i * 3 + 2]
-
 #define YC(i, buf)  buf[i * 2]
 #define CbC(i, buf) buf[(i & 0xfffffffe) * 2 + 1]
 #define CrC(i, buf) buf[(i & 0xfffffffe) * 2 + 3]
 
 void process_rgb(void *_buf, int amt) {
   assert(amt == 3 * WIDTH);
-  process(RC, GC, BC, R, G, B);
+  process({
+      r = buf[i * 3 + 0] / 255.0;
+      g = buf[i * 3 + 1] / 255.0;
+      b = buf[i * 3 + 2] / 255.0;
+  });
 }
 
 void process_yuv(void *_buf, int amt) {
   assert(amt == 2 * WIDTH);
-  process(YC, CrC, CbC, Y, Cr, Cb);
+  process({
+      double y  = buf[i * 2] / 255.0;
+      double cb = buf[(i & 0xfffffffe) * 2 + 1] / 255.0;
+      double cr = buf[(i & 0xfffffffe) * 2 + 3] / 255.0;
+      Ycbcr2Rgb(&r, &g, &b, y, cb, cr);
+  });
 }
 
 int elapsed(struct timeval *start, struct timeval *end) {
@@ -105,13 +79,15 @@ void findmin(int *row, int *col) {
   int i, j;
 
   int mini = 0, minj = 0;
-  int min = INT_MAX;
-  int windows[WIDTH - SIZE];
+  double min = 10000000000000000;
+  double windows[WIDTH - SIZE];
   for (i = 0; i < WIDTH - SIZE; i++)
     windows[i] = 0;
   for (i = 0; i < HEIGHT; i++) {
     for (j = 0; j < WIDTH - SIZE; j++) {
+      assert(buffer[i][j] >= 0);
       if (i >= SIZE) {
+        assert(windows[j] >= 0);
         if (windows[j] < min) {
           min = windows[j];
           mini = i;
@@ -122,6 +98,7 @@ void findmin(int *row, int *col) {
       windows[j] += buffer[i][j];
     }
   }
+
   *row = mini;
   *col = minj;
 }

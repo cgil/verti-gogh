@@ -37,12 +37,12 @@ void decode(char *filename) {
 int main(int argc, char *argv[]) {
   assert(argc > 1);
 
-  set_target(0xff, 0x00, 0x00);
+  set_target(0x3a, 0x97, 0xd2);
   reset();
   decode(argv[1]);
 
   int row, col;
   findmin(&row, &col);
-  printf("0 %d %d\n", row, col);
+  printf("0 %d %d\n", col, row);
   return 0;
 }
