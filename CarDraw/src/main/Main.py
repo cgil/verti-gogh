@@ -56,7 +56,7 @@ def calibrate():
   clear()
   circle(width / 2, height / 2, 50, '#' + color)
   canvas.pack(fill=BOTH, expand=1)
-  root.after(400, check)
+  root.after(1000, check)
 
 def check():
   global colors, buckets, proc
@@ -67,6 +67,7 @@ def check():
 
   proc.stdin.write('0x' + color + "\n")
   x, y = proc.stdout.readline()[:-1].split(' ')
+  print color, 'at', x, y
 
   appended = False
   for i, bkt in enumerate(buckets):
