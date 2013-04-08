@@ -61,9 +61,9 @@ void process_rgb(void *_buf, int amt) {
 void process_yuv(void *_buf, int amt) {
   assert(amt == 2 * WIDTH);
   process({
-      double y  = buf[i * 2] / 255.0;
-      double cb = buf[(i & 0xfffffffe) * 2 + 1] / 255.0;
-      double cr = buf[(i & 0xfffffffe) * 2 + 3] / 255.0;
+      double y  = buf[i * 2];
+      double cb = buf[(i & 0xfffffffe) * 2 + 1];
+      double cr = buf[(i & 0xfffffffe) * 2 + 3];
       Ycbcr2Rgb(&r, &g, &b, y, cb, cr);
   });
 }

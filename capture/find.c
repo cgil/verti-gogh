@@ -37,7 +37,8 @@ void decode(char *filename) {
 int main(int argc, char *argv[]) {
   assert(argc > 1);
 
-  set_target(0x3a, 0x97, 0xd2);
+  //98647a
+  set_target(0x98, 0x64, 0x7a);
   reset();
   decode(argv[1]);
 
