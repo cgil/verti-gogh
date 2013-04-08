@@ -35,30 +35,29 @@ def circle(x, y, rad, color):
 colors = []
 buckets = []
 color = None
-# proc = None
 
-def calibrate_start():
-  # global proc
-  # proc = Popen(['./capture/ping'], stdout=PIPE, stdin=PIPE, stderr=None)
-  calibrate()
+curx = None
+cury = None
 
-def calibrate():
+center = None
+topleft = None
+topright = None
+botleft = None
+botright = None
+painted = False
+
+# Check the buckets if one of the contains the "true location of the dot".
+def check():
   global colors, buckets, color
   print colors, buckets
   for i, clrs in enumerate(colors):
     if len(clrs) >= 5:
-      print "found at ", buckets[i][0], buckets[i][1]
-      return
+      return i
+  return None
 
-  color = '%06x' % randint(0, (1 << 24) - 1)
-  clear()
-  circle(width / 2, height / 2, 20, '#' + color)
-  canvas.pack(fill=BOTH, expand=1)
-  root.after(200, check)
-
-def check():
-  global colors, buckets
-  # proc.poll()
+# Locate the dot, put it in a bucket
+def locate():
+  global colors, buckets, color
   proc = Popen(['./capture/find_raw', '0x' + color],
                stdout=PIPE, stdin=None, stderr=None)
 
@@ -82,8 +81,60 @@ def check():
     colors.append([color])
     buckets.append([int(x), int(y)])
 
-  calibrate()
+def calibrate_center():
+  global color, center, painted
+  if painted:
+    locate()
+  i = check()
+  if i == None:
+    painted = True
+    color = '%06x' % randint(0, (1 << 24) - 1)
+    clear()
+    circle(width / 2, height / 2, 20, '#' + color)
+    canvas.pack(fill=BOTH, expand=1)
+    root.after(200, calibrate_center)
+  else:
+    center = buckets[i]
+    print 'found center', center
+    color = colors[i][0]
+    painted = False
+    calibrate_corners()
 
+def calibrate_corners():
+  global topleft, topright, botleft, botright, color, painted, buckets, colors
+  if painted:
+    locate()
+    if topleft == None:
+      topleft = buckets[0]
+    elif topright == None:
+      topright = buckets[0]
+    elif botleft == None:
+      botleft = buckets[0]
+    else:
+      botright = buckets[0]
+      done_calibration()
+      return
+  buckets = []
+  colors = []
+  painted = True
+  clear()
+  if topleft == None:
+    circle(20, 20, 20, '#' + color)
+  elif topright == None:
+    circle(width - 20, 20, 20, '#' + color)
+  elif botleft == None:
+    circle(20, height - 20, 20, '#' + color)
+  else:
+    circle(width - 20, height - 20, 20, '#' + color)
+  canvas.pack(fill=BOTH, expand=1)
+  root.after(200, calibrate_corners)
+
+def done_calibration():
+  print 'center', center
+  print 'topleft', topleft
+  print 'topright', topright
+  print 'botleft', botleft
+  print 'botright', botright
 
 def readappend(fh, _):
   mystr = sys.stdin.readline()
@@ -93,6 +144,6 @@ def readappend(fh, _):
   cars[int(idx)].display()
   canvas.pack(fill=BOTH, expand=1)
 
-root.after(10, calibrate_start)
+root.after(10, calibrate_center)
 
 root.mainloop()
