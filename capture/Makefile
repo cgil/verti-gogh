@@ -1,6 +1,6 @@
 CFLAGS += -Wall -Wextra -Werror -Wno-unused-parameter -O2 -g
 PROGS = find calibrate calibrate_raw capture_raw_frames ping yuyv find_yuyv \
-	convert
+	convert find_raw
 LIBS = raw lib colorspace
 
 all: $(PROGS)

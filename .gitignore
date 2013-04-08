@@ -8,8 +8,7 @@ capture/ping
 capture/yuyv
 capture/find_yuyv
 capture/convert
-
-
+capture/find_raw
 *.png
 *.yuv
 *.raw

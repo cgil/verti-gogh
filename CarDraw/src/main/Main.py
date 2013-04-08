@@ -35,11 +35,11 @@ def circle(x, y, rad, color):
 colors = []
 buckets = []
 color = None
-proc = None
+# proc = None
 
 def calibrate_start():
-  global proc
-  proc = Popen(['./capture/ping'], stdout=PIPE, stdin=PIPE, stderr=None)
+  # global proc
+  # proc = Popen(['./capture/ping'], stdout=PIPE, stdin=PIPE, stderr=None)
   calibrate()
 
 def calibrate():
@@ -48,25 +48,25 @@ def calibrate():
   for i, clrs in enumerate(colors):
     if len(clrs) >= 5:
       print "found at ", buckets[i][0], buckets[i][1]
-      proc.terminate()
-      proc.wait()
       return
 
   color = '%06x' % randint(0, (1 << 24) - 1)
   clear()
-  circle(width / 2, height / 2, 50, '#' + color)
+  circle(width / 2, height / 2, 20, '#' + color)
   canvas.pack(fill=BOTH, expand=1)
-  root.after(1000, check)
+  root.after(200, check)
 
 def check():
-  global colors, buckets, proc
-  proc.poll()
+  global colors, buckets
+  # proc.poll()
+  proc = Popen(['./capture/find_raw', '0x' + color],
+               stdout=PIPE, stdin=None, stderr=None)
+
+  x, y = proc.stdout.readline()[:-1].split(' ')
+  proc.wait()
   if proc.returncode != None and proc.returncode != 0:
     print("bad return code", proc.returncode)
     raise 'oh no'
-
-  proc.stdin.write('0x' + color + "\n")
-  x, y = proc.stdout.readline()[:-1].split(' ')
   print color, 'at', x, y
 
   appended = False
@@ -74,7 +74,7 @@ def check():
     dx = bkt[0] - int(x)
     dy = bkt[1] - int(y)
     d = dx * dx + dy * dy
-    if d < 4:
+    if d < 36:
       colors[i].append(color)
       appended = True
       break
@@ -83,7 +83,6 @@ def check():
     buckets.append([int(x), int(y)])
 
   calibrate()
-
 
 
 def readappend(fh, _):
