@@ -6,6 +6,8 @@
 #include "lib.h"
 #include "colorspace.h"
 
+#define EPSILON -0.0001
+
 static double H = 0;
 static double S = 0;
 static double L = 0;
@@ -13,8 +15,20 @@ static double L = 0;
 static int nxt;
 double buffer[HEIGHT][WIDTH];
 
+static int topx = 0;
+static int topy = 0;
+static int botx = WIDTH;
+static int boty = HEIGHT;
+
 void set_target(int r, int g, int b) {
   Rgb2Hsl(&H, &S, &L, r / 255.0, g / 255.0, b / 255.0);
+}
+
+void set_bounds(int ltopx, int ltopy, int lbotx, int lboty) {
+  topx = ltopx;
+  topy = ltopy;
+  botx = lbotx;
+  boty = lboty;
 }
 
 void reset() {
@@ -25,7 +39,7 @@ void reset() {
   double window[SIZE];                                  \
   int i;                                                \
   unsigned char *buf = _buf;                            \
-  double sum = 0;                                          \
+  double sum = 0;                                       \
   for (i = 0; i < SIZE; i++)                            \
     window[i] = 0;                                      \
   for (i = 0; i < WIDTH; i++) {                         \
@@ -40,6 +54,7 @@ void reset() {
     sum += mag - window[i % SIZE];                      \
     window[i % SIZE] = mag;                             \
     if (i >= SIZE) {                                    \
+      assert(sum >= EPSILON); \
       buffer[nxt][i - SIZE] = sum;                      \
     }                                                   \
   }                                                     \
@@ -83,11 +98,12 @@ void findmin(int *row, int *col) {
   double windows[WIDTH - SIZE];
   for (i = 0; i < WIDTH - SIZE; i++)
     windows[i] = 0;
-  for (i = 0; i < HEIGHT; i++) {
-    for (j = 0; j < WIDTH - SIZE; j++) {
-      assert(buffer[i][j] >= 0);
-      if (i >= SIZE) {
-        assert(windows[j] >= 0);
+
+  for (i = topy; i < boty; i++) {
+    for (j = topx; j < botx - SIZE; j++) {
+      assert(buffer[i][j] >= EPSILON);
+      if (i >= topy + SIZE) {
+        assert(windows[j] >= EPSILON);
         if (windows[j] < min) {
           min = windows[j];
           mini = i;

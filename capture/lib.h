@@ -13,6 +13,7 @@
 #define SIZE 5
 
 void set_target(int r, int g, int b);
+void set_bounds(int topx, int topy, int botx, int boty);
 void reset();
 void process_rgb(void *buf, int size);
 void process_yuv(void *buf, int size);

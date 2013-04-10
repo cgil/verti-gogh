@@ -129,19 +129,62 @@ def calibrate_corners():
   canvas.pack(fill=BOTH, expand=1)
   root.after(200, calibrate_corners)
 
+mystdin = None
+
+bounds = []
+
 def done_calibration():
+  global mystdin, colors, buckets, center, topleft, topright, botleft, botright, bounds
   print 'center', center
   print 'topleft', topleft
   print 'topright', topright
   print 'botleft', botleft
   print 'botright', botright
+  bad = False
+  if topleft[0] > center[0] or topleft[1] > center[1]:
+    print 'invalid topleft'
+    bad = True
+  if topright[0] < center[0] or topright[1] > center[1]:
+    print 'invalid topright'
+    bad = True
+  if botleft[0] > center[0] or botleft[1] < center[1]:
+    print 'invalid botleft'
+    bad = True
+  if botright[0] < center[0] or botright[1] < center[1]:
+    print 'invalid botright'
+    bad = True
+
+  if bad:
+    print 'make sure the webcam sees the whole screen, retrying'
+    painted = False
+    colors = []
+    buckets = []
+    topleft = topright = botleft = botright = center = None
+    root.after(1000, calibrate_center)
+    return
+  bounds = [[min(topleft[0], botleft[0]),
+             min(topleft[1], topright[1])],
+            [max(botright[0], topright[0]),
+             max(botright[1], botleft[1])]]
+
+  proc = Popen(['./capture/capture_raw_frames',
+                '0x000000',
+                str(bounds[0][0]),
+                str(bounds[0][1]),
+                str(bounds[1][0]),
+                str(bounds[1][1])],
+               stdout=PIPE)
+  mystdin = proc.stdout
+  root.tk.createfilehandler(mystdin, tkinter.READABLE, readappend)
 
 def readappend(fh, _):
-  mystr = sys.stdin.readline()
+  mystr = mystdin.readline()
   print mystr
-  idx, row, col = mystr.split(' ')
-  cars[int(idx)].addPoint(int(row), int(col))
-  cars[int(idx)].display()
+  row, col = mystr.split(' ')
+  clear()
+  circle((int(col) - bounds[0][0]) * width / (bounds[1][0] - bounds[0][0]),
+         (int(row) - bounds[0][1]) * height / (bounds[1][1] - bounds[0][1]),
+         10, '#ff0000')
   canvas.pack(fill=BOTH, expand=1)
 
 root.after(10, calibrate_center)
