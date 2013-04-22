@@ -1,19 +1,28 @@
 package main
 
-// import "io/ioutil"
-// import "net/http"
-// import "os"
-// import "time"
-// import ws "github.com/kellegous/websocket"
 import "github.com/ziutek/serial"
+import "io/ioutil"
+import "net/http"
+import "os"
+import "time"
+import ws "code.google.com/p/go.net/websocket"
 
 type LightningMcQueen struct {
   toy *IrToy
+  updown int
+  rightleft int
 }
 
-func (car *LightningMcQueen) right() {
-  car.send("1131122211112")
-}
+func (car *LightningMcQueen) stop()          { car.send("1132121211212") }
+func (car *LightningMcQueen) right()         { car.send("1131122211112") }
+func (car *LightningMcQueen) left()          { car.send("1132112211221") }
+func (car *LightningMcQueen) forward()       { car.send("1132222211211") }
+func (car *LightningMcQueen) backward()      { car.send("1132211211222") }
+func (car *LightningMcQueen) fan()           { car.send("1132121212121") }
+func (car *LightningMcQueen) forwardright()  { car.send("1131212211122") }
+func (car *LightningMcQueen) forwardleft()   { car.send("1131221211111") }
+func (car *LightningMcQueen) backwardright() { car.send("1131111212212") }
+func (car *LightningMcQueen) backwardleft()  { car.send("1131111211121") }
 
 func (car *LightningMcQueen) send(s string) {
   var cmd [28]byte
@@ -42,58 +51,70 @@ func main() {
     car.right()
   }
 
-  // f, err := os.Open("./index.html")
-  // if err != nil { panic(err) }
-  // index, err := ioutil.ReadAll(f)
-  // if err != nil { panic(err) }
-  // f.Close()
-  // left := false
-  // right := false
-  // forward := false
-  // backwards := false
-  // fan := false
-  // event := make(chan int, 0)
+  f, err := os.Open("./index2.html")
+  if err != nil { panic(err) }
+  index, err := ioutil.ReadAll(f)
+  if err != nil { panic(err) }
+  f.Close()
+  event := make(chan string, 0)
 
-  // http.Handle("/ws", ws.Handler(func(w *ws.Conn) {
-  //   var message string
-  //   for {
-  //     if ws.Message.Receive(w, &message) != nil { break }
+  http.Handle("/ws", ws.Handler(func(w *ws.Conn) {
+    var message string
+    for {
+      if ws.Message.Receive(w, &message) != nil { break }
+      event <- message
+    }
+  }))
 
-  //     println("got", message)
+  srv := http.FileServer(http.Dir("./static"))
+  http.Handle("/static/", http.StripPrefix("/static", srv))
+  http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+    w.WriteHeader(http.StatusOK)
+    w.Write(index)
+  })
 
-  //     switch message {
-  //       case "forward-start": forward = true
-  //       case "forward-stop":  forward = false
-  //       case "right-start": right = true
-  //       case "right-stop":  right = false
-  //       case "left-start": left = true
-  //       case "left-stop":  left = false
-  //       case "backwards-start": backwards = true
-  //       case "backwards-stop":  backwards = false
-  //       case "fan": fan = !fan
-  //     }
-  //     event <- 0
-  //   }
-  // }))
+  go func() {
+    ticker := time.Tick(500 * time.Millisecond)
+    for {
+      select {
+        case <-ticker:
+          if car == nil { continue }
+        case s := <-event:
+          if car == nil { continue }
+          car.stop()
+          switch s {
+            case "-1": car.updown = 0;  car.rightleft = 0
+            case "0":  car.updown = 0;  car.rightleft = 1
+            case "1":  car.updown = 1;  car.rightleft = 1
+            case "2":  car.updown = 1;  car.rightleft = 0
+            case "3":  car.updown = 1;  car.rightleft = -1
+            case "4":  car.updown = 0;  car.rightleft = -1
+            case "5":  car.updown = -1; car.rightleft = -1
+            case "6":  car.updown = -1; car.rightleft = 0
+            case "7":  car.updown = -1; car.rightleft = 1
+          }
+      }
 
-  // http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-  //   w.WriteHeader(http.StatusOK)
-  //   w.Write(index)
-  // })
+      if car.updown == 0 && car.rightleft == 1 {
+        car.right()
+      } else if car.updown == 0 && car.rightleft == -1 {
+        car.left()
+      } else if car.updown == 1 && car.rightleft == 0 {
+        car.forward()
+      } else if car.updown == -1 && car.rightleft == 0 {
+        car.backward()
+      } else if car.updown == -1 && car.rightleft == -1 {
+        car.backwardleft()
+      } else if car.updown == 1 && car.rightleft == -1 {
+        car.forwardleft()
+      } else if car.updown == -1 && car.rightleft == 1 {
+        car.backwardright()
+      } else if car.updown == 1 && car.rightleft == 1 {
+        car.forwardright()
+      }
+    }
+  }()
 
-  // go func() {
-  //   ticker := time.Tick(100 * time.Millisecond)
-  //   for {
-  //     select {
-  //       case <-ticker:
-  //       case <-event:
-  //     }
-  //     if right {
-  //       car.right()
-  //     }
-  //   }
-  // }()
-
-  // println("listening")
-  // http.ListenAndServe(":8000", nil)
+  println("listening")
+  http.ListenAndServe(":8000", nil)
 }

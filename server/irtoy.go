@@ -1,6 +1,7 @@
 package main
 
 import "io"
+import "log"
 
 type IrToy struct {
   serial io.ReadWriteCloser
@@ -23,13 +24,16 @@ func (t *IrToy) setSamplingMode() {
 }
 
 func (t *IrToy) write(b []byte) {
+  log.Printf("writing %v", b)
   n, err := t.serial.Write(b)
   if err != nil { panic(err) }
   if n != len(b) { panic("short write") }
 }
 
 func (t *IrToy) read(b []byte) {
+  log.Printf("waiting for %d bytes", len(b))
   n, err := t.serial.Read(b)
+  log.Printf("got %d bytes: %v", n, b)
   if err != nil { panic(err) }
   if n != len(b) { panic("short read") }
 }
@@ -43,11 +47,13 @@ func (t *IrToy) transmit(b []byte) {
   t.acknowledge([]byte{0x26, 0x25, 0x24, 0x03})
   t.acknowledge(b)
 
-  var ack [4]byte
-  t.read(ack[0:4])
+  var ack [3]byte
+  t.read(ack[0:3])
   if ack[0] != 't' { panic("didn't receive a 't'") }
-  if (int(ack[2]) << 8) | int(ack[1]) != len(b) { panic("didn't send all bytes?") }
-  if ack[3] != 'C' { panic("didn't actually complete") }
+  if (int(ack[1]) << 8) | int(ack[2]) != len(b) { panic("didn't send all bytes?") }
+
+  t.read(ack[0:1])
+  if ack[0] != 'C' { panic("didn't actually complete") }
 }
 
 func (t *IrToy) acknowledge(b []byte) {

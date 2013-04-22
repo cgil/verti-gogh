@@ -14,3 +14,4 @@ capture/find_raw
 *.raw
 *.jpg
 *.jpeg
+server/server
