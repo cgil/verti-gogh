@@ -177,16 +177,23 @@ def done_calibration():
   mystdin = proc.stdout
   root.tk.createfilehandler(mystdin, tkinter.READABLE, readappend)
 
+prevrow = 0
+prevcol = 0
 def readappend(fh, _):
+  global prevrow, prevcol
   mystr = mystdin.readline()
   # print mystr
   row, col = mystr.split(' ')
-  clear()
-  circle((int(col) - bounds[0][0]) * width / (bounds[1][0] - bounds[0][0]),
-         (int(row) - bounds[0][1]) * height / (bounds[1][1] - bounds[0][1]),
-         10, '#ff0000')
+  row = (int(row) - bounds[0][1]) * height / (bounds[1][1] - bounds[0][1])
+  col = (int(col) - bounds[0][0]) * width / (bounds[1][0] - bounds[0][0])
+
+  circle(prevcol, prevrow, 5, '#ffffff')
+  circle(col, row, 5, '#ff0000')
   canvas.pack(fill=BOTH, expand=1)
+  prevrow = row
+  prevcol = col
 
+clear()
 root.after(10, calibrate_center)
-
+root.overrideredirect(True)
 root.mainloop()
