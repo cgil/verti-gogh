@@ -85,7 +85,7 @@ func main() {
   })
 
   go func() {
-    ticker := time.Tick(500 * time.Millisecond)
+    ticker := time.Tick(400 * time.Millisecond)
     for {
       select {
         case <-ticker:
