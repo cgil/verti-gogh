@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang=en>
+  <head>
+    <meta charset=utf-8>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <script type='text/javascript'>
+      var socket;
+      function init() {
+          var host = "ws://" + document.location.host + '/ws';
+          socket = new WebSocket(host);
+          socket.onopen = function() { console.log('opened!'); };
+          socket.onclose = function() { console.log('closed!'); };
+          socket.onerror = function() { console.log('errord!'); };
+      }
+      init();
+    </script>
+  </head>
+  <body>
+    <input type='button' value="fan" onclick="socket.send('fan')" />
+  </body>
+</html>

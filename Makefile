@@ -14,7 +14,7 @@ capture:
 
 transfer: pi
 	scp ./game/game pi:code/verti-gogh/game
-	scp ./server/server pi:code/verti-gogh/server
+	scp ./server/server ./server/*.html pi:code/verti-gogh/server
 
 
 .PHONY: server game capture

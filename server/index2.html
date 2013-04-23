@@ -98,15 +98,6 @@ function draw() {
     c.lineTo(canvas.width / 2, canvas.height / 2);
     c.moveTo(canvas.width / 2, canvas.height / 2 - box / 2);
     c.lineTo(canvas.width / 2, canvas.height / 2);
-
-    c.moveTo(canvas.width / 2 - box / 2.8, canvas.height / 2 - box / 2.8);
-    c.lineTo(canvas.width / 2, canvas.height / 2);
-    c.moveTo(canvas.width / 2 + box / 2.8, canvas.height / 2 - box / 2.8);
-    c.lineTo(canvas.width / 2, canvas.height / 2);
-    c.moveTo(canvas.width / 2 - box / 2.8, canvas.height / 2 + box / 2.8);
-    c.lineTo(canvas.width / 2, canvas.height / 2);
-    c.moveTo(canvas.width / 2 + box / 2.8, canvas.height / 2 + box / 2.8);
-    c.lineTo(canvas.width / 2, canvas.height / 2);
     c.stroke();
 
     var myloc;
@@ -119,7 +110,7 @@ function draw() {
       if (angle < 0)
         angle += 2 * Math.PI;
 
-      myloc = Math.floor((angle + 2 * Math.PI / 16) / (Math.PI / 4)) % 8;
+      myloc = Math.floor((angle + 2 * Math.PI / 8) / (Math.PI / 2)) % 4;
     } else {
       myloc = -1;
     }
@@ -133,8 +124,8 @@ function draw() {
       lx = canvas.width / 2;
       ly = canvas.height / 2;
     } else {
-      lx = Math.cos(loc * Math.PI / 4) * box / 2 + canvas.width / 2;
-      ly = -Math.sin(loc * Math.PI / 4) * box / 2 + canvas.height / 2;
+      lx = Math.cos(loc * Math.PI / 2) * box / 2 + canvas.width / 2;
+      ly = -Math.sin(loc * Math.PI / 2) * box / 2 + canvas.height / 2;
     }
 
     c.moveTo(lx, ly);
