@@ -72,23 +72,84 @@ class ShittyChineseCar:
     assert len(b) == 13 * 4
     self.toy.transmit(b)
 
+class LightningMcQueen:
+  def __init__(self, toy):
+    self.toy = toy
+
+  def pre(self):
+    self._send('1132121211212')
+
+  def forward(self):
+    self._send('1132222211211')
+
+  def backward(self):
+    self._send('1132211211222')
+
+  def left(self):
+    self._send('1132112211221')
+
+  def right(self):
+    self._send('1131122211112')
+
+  def forwardright(self):
+    self._send('1131212211122')
+
+  def forwardleft(self):
+    self._send('1131221211111')
+
+  def backwardright(self):
+    self._send('1131111212212')
+
+  def backwardleft(self):
+    self._send('1131111211121')
+
+  def fan(self):
+    self._send('1132121212121')
+
+  def _send(self, cmd):
+    b = []
+    for c in cmd:                   # XXXXXX
+      if c == '1':
+        b.append(0)
+        b.append(23)
+      elif c == '2':
+        b.append(0)
+        b.append(47)
+      else:
+        b.append(0)
+        b.append(70)
+
+    assert len(b) == 26
+    b.append(0)
+    b.append(23)
+    print b
+    self.toy.transmit(b)
+
 
 with serial.Serial('/dev/ttyACM0') as serialDevice:
+  # serialDevice.write('$')
   t = IrToy(serialDevice)
-  c = ShittyChineseCar(t, 0)
+  # c = ShittyChineseCar(t, 0)
+  c = LightningMcQueen(t)
 
-  print 'forward'
   c.pre()
   c.forward()
-  time.sleep(0.2)
+  # time.sleep(1)
+  # c.pre()
+  # c.fan()
 
-  print 'left'
-  c.pre()
-  c.left()
-  time.sleep(0.1)
-
-  print 'forward'
-  c.pre()
-  c.forward()
-  time.sleep(0.1)
-
+  # c.pre()
+  # c.forward()
+  # time.sleep(1)
+  # c.pre()
+#
+#   print 'left'
+#   c.pre()
+#   c.left()
+#   time.sleep(0.1)
+#
+#   print 'forward'
+#   c.pre()
+#   c.forward()
+#   time.sleep(0.1)
+#

@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE, STDOUT
 
 root = Tk()
 width = 1024
-height = 768
+height = 500
 root.geometry(str(width)+"x"+str(height))
 canvas = VertCanvas.VertCanvas(root)
 cars = []
@@ -179,7 +179,7 @@ def done_calibration():
 
 def readappend(fh, _):
   mystr = mystdin.readline()
-  print mystr
+  # print mystr
   row, col = mystr.split(' ')
   clear()
   circle((int(col) - bounds[0][0]) * width / (bounds[1][0] - bounds[0][0]),
