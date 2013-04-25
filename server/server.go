@@ -6,7 +6,7 @@ import "io/ioutil"
 import ws "github.com/kellegous/websocket"
 
 func main() {
-  f, err := os.Open("../server/index.html")
+  f, err := os.Open("./index.html")
   if err != nil { panic(err) }
   index, err := ioutil.ReadAll(f)
   if err != nil { panic(err) }
