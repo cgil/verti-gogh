@@ -10,6 +10,10 @@ static int process_image() {
   findmin(&row, &col);
   printf("%d %d\n", row, col);
   fflush(stdout);
+
+  static char buf[1024];
+  if (fgets(buf, sizeof(buf), stdin) == NULL)
+    return 0;
   return 1; /* keep going */
 }
 
