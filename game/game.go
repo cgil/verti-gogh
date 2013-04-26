@@ -46,13 +46,14 @@ const (
 )
 
 var (
-  bg    = xgraphics.BGRA{0xff, 0xff, 0xff, 0xff}
-  car   = xgraphics.BGRA{0x00, 0x00, 0x00, 0xff}
+  bg     = xgraphics.BGRA{0xff, 0xff, 0xff, 0xff}
+  car    = xgraphics.BGRA{0x00, 0x00, 0x00, 0xff}
   marker = xgraphics.BGRA{0x44, 0x44, 0x44, 0xff}
-  green = xgraphics.BGRA{0x00, 0xff, 0x00, 0xff}
-  red   = xgraphics.BGRA{0x00, 0x00, 0xff, 0xff}
+  green  = xgraphics.BGRA{0x00, 0xff, 0x00, 0xff}
+  red    = xgraphics.BGRA{0x00, 0x00, 0xff, 0xff}
 )
 
+// Global window variables
 var X *xgbutil.XUtil
 var win *xwindow.Window
 var canvas *xgraphics.Image
@@ -240,6 +241,7 @@ func center() (image.Point, xgraphics.BGRA) {
 }
 
 func calibrate() {
+  return
   var topleft, topright, botleft, botright image.Point
 
   corner := func(x, y int, color xgraphics.BGRA) image.Point{
@@ -288,72 +290,22 @@ func main() {
   X, err = xgbutil.NewConn()
   fatal(err)
 
-  // Whenever the mousebind package is used, you must call Initialize.
-  // Similarly for the keybind package.
   mousebind.Initialize(X)
-
-  // Create a new xgraphics.Image. It automatically creates an X pixmap for
-  // you, and handles drawing to windows in the XDraw, XPaint and
-  // XSurfaceSet functions.
-  // N.B. An error is possible since X pixmap allocation can fail.
   canvas = xgraphics.New(X, image.Rect(0, 0, width, height))
-
-  // Color in the background color.
   canvas.For(func(x, y int) xgraphics.BGRA {
     return bg
   })
-  win = canvas.XShowExtra("Pointer painting", true)
+  win = canvas.XShowExtra("verti-gogh", true)
   win.Listen(xproto.EventMaskPointerMotion)
 
-  // Create a very simple window with dimensions equal to the image.
-  // win.Create(im.X.RootWin(), 0, 0, w, h, 0)
-
-  // Make this window close gracefully.
-  // win.WMGracefulClose(func(w *xwindow.Window) {
-  //   xevent.Detach(w.X, w.Id)
-  //   keybind.Detach(w.X, w.Id)
-  //   mousebind.Detach(w.X, w.Id)
-  //   w.Destroy()
-
-  //   if quit {
-  //     xevent.Quit(w.X)
-  //   }
-  // })
-
-  // Set WM_STATE so it is interpreted as a top-level window.
-  // err = icccm.WmStateSet(X, win.Id, &icccm.WmState{
-  //   State: icccm.StateNormal,
-  // })
-  // fatal(err)
-  // if err != nil { // not a fatal error
-  //   xgbutil.Logger.Printf("Could not set WM_STATE: %s", err)
-  // }
-
-  // Set _NET_WM_NAME so it looks nice.
-  // err = ewmh.WmNameSet(X, win.Id, "wut")
-  // fatal(err)
-  // if err != nil { // not a fatal error
-  //   xgbutil.Logger.Printf("Could not set _NET_WM_NAME: %s", err)
-  // }
-
-  // Paint our image before mapping.
-  // im.XSurfaceSet(win.Id)
-  // im.XDraw()
-  // im.XPaint(win.Id)
-
-  // Now we can map, since we've set all our properties.
-  // (The initial map is when the window manager starts managing.)
-  // win.Map()
-
-  // Attach event handler for MotionNotify that does not compress events.
-
+  // Atempt to fullscreen
   err = ewmh.WmStateReq(X, win.Id, ewmh.StateToggle, "_NET_WM_STATE_FULLSCREEN")
   fatal(err)
 
-  go func() {
-    log.Println(http.ListenAndServe("localhost:6060", nil))
-  }()
+  // profiling
+  go func() { log.Println(http.ListenAndServe("localhost:6060", nil)) }()
 
+  // calibrate somewhere else and consume this thread for the main loop
   go calibrate()
   xevent.Main(X)
 }
