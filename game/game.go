@@ -21,6 +21,7 @@ import (
   "os/exec"
   "time"
   "net/http"
+  "flag"
   _ "net/http/pprof"
 
   "github.com/BurntSushi/xgb/xproto"
@@ -58,6 +59,8 @@ var X *xgbutil.XUtil
 var win *xwindow.Window
 var canvas *xgraphics.Image
 
+var webcam = flag.Bool("webcam", false, "enable webcam")
+
 func circle(cx, cy, size int, color xgraphics.BGRA) {
   tipRect := midRect(cx, cy, size, size, width, height)
 
@@ -75,9 +78,9 @@ func circle(cx, cy, size int, color xgraphics.BGRA) {
       dx := x - cx
       dy := y - cy
       if dx * dx + dy * dy < size * size / 4 {
-        canvas.Set(x, y, color)
+        canvas.SetBGRA(x, y, color)
       } else {
-        canvas.Set(x, y, bg)
+        canvas.SetBGRA(x, y, bg)
       }
     }
   }
@@ -90,6 +93,7 @@ func game(topleft, topright, botleft, botright image.Point) {
   // Use the bounds to draw a small dot where we think the black dot on the
   // screen is
   go func() {
+    if !*webcam { return }
     pmin := image.Point { X: max(topleft.X, botleft.X),
                           Y: max(topleft.Y, topright.Y) }
     pmax := image.Point { X: min(topright.X, botright.X),
@@ -241,8 +245,10 @@ func center() (image.Point, xgraphics.BGRA) {
 }
 
 func calibrate() {
-  return
   var topleft, topright, botleft, botright image.Point
+  if !*webcam {
+    game(topleft, topright, botleft, botright)
+  }
 
   corner := func(x, y int, color xgraphics.BGRA) image.Point{
     circle(x, y, calsize, color)
@@ -286,6 +292,8 @@ func calibrate() {
 }
 
 func main() {
+  flag.Parse()
+
   var err error
   X, err = xgbutil.NewConn()
   fatal(err)
