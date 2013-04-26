@@ -31,13 +31,16 @@ import (
 )
 
 const (
-  delta = 10.0
+  delta = 20.0
   carsize = 30
   width, height = 1024, 500
 
   calsize        = 40
   CALIBRATE_HIT_THRESH  = 5
   CALIBRATE_DIST_THRESH = 36
+
+  MONSTER_UPDATE = 200 * time.Millisecond
+  MONSTER_CHANGE = 5 * time.Second
 )
 
 var (
@@ -139,8 +142,8 @@ func game(topleft, topright, botleft, botright image.Point) {
   }).Connect(X, win.Id)
 
   // Game "monster" loop
-  update := time.Tick(100 * time.Millisecond)
-  change := time.Tick(5 * time.Second)
+  update := time.Tick(MONSTER_UPDATE)
+  change := time.Tick(MONSTER_CHANGE)
   x, y := 200, 200
   cur := green
   for {
