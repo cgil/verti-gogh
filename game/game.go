@@ -36,7 +36,7 @@ import (
 const (
   delta = 20.0
   carsize = 30
-  width, height = 1024, 500
+  width, height = 1280, 720
 
   calsize        = 40
   CALIBRATE_HIT_THRESH  = 5
@@ -115,18 +115,31 @@ func game(topleft, topright, botleft, botright image.Point) {
     var p image.Point
 
     buf.ReadString('\n') // discard first point
+    outliers := 0
     for _ = range time.Tick(100 * time.Millisecond) {
       // signal readiness and then wait for it to become available
       in.Write([]byte("go\n"))
       s, err := buf.ReadString('\n')
       fatal(err)
 
-      circle(p.X, p.Y, 10, bg)
-      n, err := fmt.Sscanf(s, "%d %d", &p.Y, &p.X)
-      p.Y = (p.Y - pmin.Y) * height / (pmax.Y - pmin.Y)
-      p.X = (p.X - pmin.X) * width / (pmax.X - pmin.X)
+      var myx, myy int
+      n, err := fmt.Sscanf(s, "%d %d", &myy, &myx)
       fatal(err)
       if n != 2 { panic("didn't get 2 ints") }
+
+      myy = (myy - pmin.Y) * height / (pmax.Y - pmin.Y)
+      myx = (myx - pmin.X) * width / (pmax.X - pmin.X)
+      dx := p.X - myx
+      dy := p.Y - myy
+      if outliers < 3 && dx * dx + dy * dy > 600 {
+        outliers += 1
+        continue
+      }
+      outliers = 0
+
+      circle(p.X, p.Y, 10, bg)
+      p.X = myx
+      p.Y = myy
       circle(p.X, p.Y, 10, marker)
     }
   }()
