@@ -12,6 +12,7 @@ package main
 
 import (
   "bufio"
+  "bytes"
   "fmt"
   "image"
   "log"
@@ -35,7 +36,7 @@ import (
 const (
   delta = 20.0
   carsize = 30
-  width, height = 1280, 720
+  width, height = 1100, 600
 
   calsize        = 40
   CALIBRATE_HIT_THRESH  = 5
@@ -204,10 +205,15 @@ func game(topleft, topright, botleft, botright image.Point) {
 }
 
 func locate(c *xgraphics.BGRA) (p image.Point) {
-  out, err := exec.Command("./capture/find_raw",
-                           fmt.Sprintf("0x%02x%02x%02x", c.R, c.G, c.B)).Output()
+  var buf bytes.Buffer
+  cmd := exec.Command("./capture/find_raw",
+                      fmt.Sprintf("0x%02x%02x%02x", c.R, c.G, c.B))
+  cmd.Stderr = os.Stderr
+  cmd.Stdin = nil
+  cmd.Stdout = &buf
+  err := cmd.Run()
   fatal(err)
-  n, err := fmt.Sscanf(string(out), "%d %d", &p.X, &p.Y)
+  n, err := fmt.Sscanf(buf.String(), "%d %d", &p.X, &p.Y)
   fatal(err)
   if n != 2 { panic("didn't get 2 numbers") }
   return
