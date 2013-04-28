@@ -1,7 +1,7 @@
 package main
 
 import "io"
-import "log"
+// import "log"
 
 type IrToy struct {
   serial io.ReadWriteCloser
@@ -24,16 +24,16 @@ func (t *IrToy) setSamplingMode() {
 }
 
 func (t *IrToy) write(b []byte) {
-  log.Printf("writing %v", b)
+  // log.Printf("writing %v", b)
   n, err := t.serial.Write(b)
   if err != nil { panic(err) }
   if n != len(b) { panic("short write") }
 }
 
 func (t *IrToy) read(b []byte) {
-  log.Printf("waiting for %d bytes", len(b))
+  // log.Printf("waiting for %d bytes", len(b))
   n, err := t.serial.Read(b)
-  log.Printf("got %d bytes: %v", n, b)
+  // log.Printf("got %d bytes: %v", n, b)
   if err != nil { panic(err) }
   if n != len(b) { panic("short read") }
 }

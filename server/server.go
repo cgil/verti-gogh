@@ -91,25 +91,23 @@ func main() {
         case <-ticker:
           if car == nil { continue }
         case s := <-event:
-          println(s)
           if car == nil { continue }
           car.stop()
           switch s {
             case "-1":  car.updown = 0;  car.rightleft = 0
-            case "0":   car.updown = 0;  car.rightleft = 1
-            case "1":   car.updown = 1;  car.rightleft = 0
-            case "2":   car.updown = 0;  car.rightleft = -1
-            case "3":   car.updown = -1;  car.rightleft = 0
+            // case "0":   car.updown = 0;  car.rightleft = 1
+            // case "1":   car.updown = 1;  car.rightleft = 0
+            // case "2":   car.updown = 0;  car.rightleft = -1
+            // case "3":   car.updown = -1;  car.rightleft = 0
             case "fan": car.fan()
-
-            // case "0":  car.updown = 0;  car.rightleft = 1
-            // case "1":  car.updown = 1;  car.rightleft = 1
-            // case "2":  car.updown = 1;  car.rightleft = 0
-            // case "3":  car.updown = 1;  car.rightleft = -1
-            // case "4":  car.updown = 0;  car.rightleft = -1
-            // case "5":  car.updown = -1; car.rightleft = -1
-            // case "6":  car.updown = -1; car.rightleft = 0
-            // case "7":  car.updown = -1; car.rightleft = 1
+            case "0":  car.updown = 0;  car.rightleft = 1
+            case "1":  car.updown = 1;  car.rightleft = 1
+            case "2":  car.updown = 1;  car.rightleft = 0
+            case "3":  car.updown = 1;  car.rightleft = -1
+            case "4":  car.updown = 0;  car.rightleft = -1
+            case "5":  car.updown = -1; car.rightleft = -1
+            case "6":  car.updown = -1; car.rightleft = 0
+            case "7":  car.updown = -1; car.rightleft = 1
           }
       }
 
