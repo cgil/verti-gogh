@@ -15,7 +15,6 @@ import (
   "fmt"
   "image"
   "log"
-  "math"
   "math/rand"
   "os"
   "os/exec"
@@ -44,6 +43,8 @@ const (
 
   MONSTER_UPDATE = 200 * time.Millisecond
   MONSTER_CHANGE = 5 * time.Second
+
+  HIT_THRESH = 1600
 )
 
 var (
@@ -60,6 +61,16 @@ var win *xwindow.Window
 var canvas *xgraphics.Image
 
 var webcam = flag.Bool("webcam", false, "enable webcam")
+
+type Dot struct {
+  good bool
+  found bool
+  x int
+  y int
+}
+const XS = 6
+const YS = 4
+var dots [XS][YS]Dot
 
 func circle(cx, cy, size int, color xgraphics.BGRA) {
   tipRect := midRect(cx, cy, size, size, width, height)
@@ -87,6 +98,23 @@ func circle(cx, cy, size int, color xgraphics.BGRA) {
 
   tip.XDraw()
   tip.XPaint(win.Id)
+}
+
+func atpoint(x, y int) {
+  px := width / (XS + 1)
+  py := height / (YS + 1)
+
+  xn := (x + px / 2) * (XS + 1) / width
+  yn := (y + py / 2) * (YS + 1) / height
+  if xn == 0 || yn == 0 || xn > XS || yn > YS { return }
+
+  d := &dots[xn - 1][yn - 1]
+  dx := d.x - x
+  dy := d.y - y
+  if !d.found && dx * dx + dy * dy < HIT_THRESH {
+    circle(d.x, d.y, 40, bg)
+    d.found = true
+  }
 }
 
 func game(topleft, topright, botleft, botright image.Point) {
@@ -141,6 +169,7 @@ func game(topleft, topright, botleft, botright image.Point) {
       p.X = myx
       p.Y = myy
       circle(p.X, p.Y, 10, marker)
+      atpoint(p.X, p.Y)
     }
   }()
 
@@ -150,49 +179,27 @@ func game(topleft, topright, botleft, botright image.Point) {
     ev = compressMotionNotify(X, ev)
     x, y := int(ev.EventX), int(ev.EventY)
 
-    circle(curx, cury, 40, bg)
-    circle(x, y, 40, car)
+    circle(curx, cury, 5, bg)
+    circle(x, y, 5, car)
     curx, cury = x, y
+    atpoint(x, y)
   }).Connect(X, win.Id)
 
-  // Game "monster" loop
-  update := time.Tick(MONSTER_UPDATE)
-  change := time.Tick(MONSTER_CHANGE)
-  x, y := 200, 200
-  cur := green
-  for {
-    select {
-      case <-change:
-        if cur == green {
-          cur = red
-        } else {
-          cur = green
-        }
-      case <-update:
-    }
-    dx := float64(curx - x)
-    dy := float64(cury - y)
+  for x := 0; x < XS; x++ {
+    for y := 0; y < YS; y++ {
+      dots[x][y].found = false
+      dots[x][y].good = (rand.Int() & 0x1 == 0)
 
-    // h = <dx, dy>
-    // |m * h| == delta
-    // sqrt(m * m * dx * dx + m * m * dy * dy) = delta
-    // dx * dx + dy * dy = delta * delta
-    // m * m = delta * delta / (dx * dx + dy * dy)
-    // m = sqrt
-    //
-    // m * m * delta * delta = dx * dx + dy * dy
-    factor := math.Sqrt(delta * delta / (dx * dx + dy * dy))
-    if cur == red {
-      dx *= factor
-      dy *= factor
-    } else {
-      dx *= -factor
-      dy *= -factor
+      xloc := width * (x + 1) / (XS + 1)
+      yloc := height * (y + 1) / (YS + 1)
+      dots[x][y].x = xloc
+      dots[x][y].y = yloc
+      if dots[x][y].good {
+        circle(xloc, yloc, 40, green)
+      } else {
+        circle(xloc, yloc, 40, red)
+      }
     }
-    circle(x, y, carsize, bg)
-    x = min(width, max(0, x + int(dx)))
-    y = min(height, max(0, y + int(dy)))
-    circle(x, y, carsize, cur)
   }
 }
 
@@ -261,6 +268,7 @@ func calibrate() {
   var topleft, topright, botleft, botright image.Point
   if !*webcam {
     game(topleft, topright, botleft, botright)
+    return
   }
 
   corner := func(x, y int, color xgraphics.BGRA) image.Point{
