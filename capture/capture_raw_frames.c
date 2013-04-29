@@ -7,8 +7,8 @@
 
 static int process_image() {
   int row, col;
-  findmin(&row, &col);
-  printf("%d %d\n", row, col);
+  double ret = findmin(&row, &col);
+  printf("%d %d %f\n", row, col, ret);
   fflush(stdout);
 
   static char buf[1024];

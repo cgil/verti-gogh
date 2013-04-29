@@ -17,7 +17,7 @@ void set_bounds(int topx, int topy, int botx, int boty);
 void reset();
 void process_rgb(void *buf, int size);
 void process_yuv(void *buf, int size);
-void findmin(int *row, int *col);
+double findmin(int *row, int *col);
 void calibrate(void);
 
 int elapsed(struct timeval *start, struct timeval *end);

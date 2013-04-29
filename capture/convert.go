@@ -9,7 +9,7 @@ const WIDTH = 320
 const HEIGHT = 240
 
 func main() {
-  f, err := os.Open("image.yuv")
+  f, err := os.Open(os.Args[1])
   if err != nil { panic(err) }
   defer f.Close()
 

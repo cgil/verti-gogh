@@ -8,8 +8,8 @@
 
 static int process_image() {
   int row, col;
-  findmin(&row, &col);
-  printf("%d %d\n", col, row);
+  double ret = findmin(&row, &col);
+  printf("%d %d %f\n", col, row, ret);
   return 0; /* stop */
 }
 

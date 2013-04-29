@@ -45,7 +45,7 @@ const (
   MONSTER_UPDATE = 200 * time.Millisecond
   MONSTER_CHANGE = 5 * time.Second
 
-  HIT_THRESH = 1600
+  HIT_THRESH = 2500
 )
 
 var (
@@ -53,7 +53,7 @@ var (
   car    = xgraphics.BGRA{0x00, 0x00, 0x00, 0xff}
   marker = xgraphics.BGRA{0x44, 0x44, 0x44, 0xff}
   green  = xgraphics.BGRA{0x00, 0xff, 0x00, 0xff}
-  red    = xgraphics.BGRA{0x00, 0x00, 0xff, 0xff}
+  red    = xgraphics.BGRA{0xff, 0x00, 0x00, 0xff}
 )
 
 // Global window variables
@@ -127,7 +127,7 @@ func game(topleft, topright, botleft, botright image.Point) {
                           Y: max(topleft.Y, topright.Y) }
     pmax := image.Point { X: min(topright.X, botright.X),
                           Y: min(botleft.Y, botright.Y) }
-    cmd := exec.Command("./capture/capture_raw_frames", "0x000000",
+    cmd := exec.Command("./capture/capture_raw_frames", "0x1c1f24",
                         fmt.Sprintf("%d", pmin.X),
                         fmt.Sprintf("%d", pmin.Y),
                         fmt.Sprintf("%d", pmax.X),
@@ -145,13 +145,14 @@ func game(topleft, topright, botleft, botright image.Point) {
 
     buf.ReadString('\n') // discard first point
     outliers := 0
-    for _ = range time.Tick(100 * time.Millisecond) {
+    for _ = range time.Tick(200 * time.Millisecond) {
       // signal readiness and then wait for it to become available
       in.Write([]byte("go\n"))
       s, err := buf.ReadString('\n')
       fatal(err)
 
       var myx, myy int
+      println(s)
       n, err := fmt.Sscanf(s, "%d %d", &myy, &myx)
       fatal(err)
       if n != 2 { panic("didn't get 2 ints") }
@@ -219,11 +220,10 @@ func locate(c *xgraphics.BGRA) (p image.Point) {
   return
 }
 
-func center() (image.Point, xgraphics.BGRA) {
+func center() (image.Point, []xgraphics.BGRA) {
   type Bucket struct {
-    color xgraphics.BGRA
+    colors []xgraphics.BGRA
     coord image.Point
-    hits  int
   }
   color := xgraphics.BGRA{ A: 0xff }
   buckets := make([]Bucket, 0)
@@ -232,9 +232,9 @@ func center() (image.Point, xgraphics.BGRA) {
     fmt.Printf("%v\n", buckets)
     // Look through the buckets to see if we have a lot of hits somewhere
     for _, bkt := range buckets {
-      if bkt.hits > CALIBRATE_HIT_THRESH {
+      if len(bkt.colors) > CALIBRATE_HIT_THRESH {
         circle(width / 2, height / 2, calsize, bg)
-        return bkt.coord, bkt.color
+        return bkt.coord, bkt.colors
       }
     }
 
@@ -254,16 +254,15 @@ func center() (image.Point, xgraphics.BGRA) {
       dx := p.X - buckets[i].coord.X
       dy := p.Y - buckets[i].coord.Y
       if dx * dx + dy * dy < CALIBRATE_DIST_THRESH {
-        buckets[i].hits++
+        buckets[i].colors = append(buckets[i].colors, color)
         appended = true
         break
       }
     }
     if !appended {
       buckets = append(buckets, Bucket {
-        color: color,
+        colors: []xgraphics.BGRA{color},
         coord: p,
-        hits: 1,
       })
     }
   }
@@ -288,34 +287,37 @@ func calibrate() {
   for {
     // find the center
     clearCanvas()
-    c, color := center()
+    c, colors := center()
 
-    // find the corners
-    topleft = corner(calsize / 2, calsize / 2, color)
-    topright = corner(width - calsize / 2, calsize / 2, color)
-    botleft = corner(calsize / 2, height - calsize / 2, color)
-    botright = corner(width - calsize / 2, height - calsize / 2, color)
+    for _, color := range colors {
+      // find the corners
+      topleft = corner(calsize / 2, calsize / 2, color)
+      topright = corner(width - calsize / 2, calsize / 2, color)
+      botleft = corner(calsize / 2, height - calsize / 2, color)
+      botright = corner(width - calsize / 2, height - calsize / 2, color)
 
-    // validate the corners
-    fmt.Printf("center: %v\ntl: %v\ntr: %v\nbl: %v\nbr: %v\n",
-               c, topleft, topright, botleft, botright)
-    if topleft.X > c.X || topleft.Y > c.Y {
-      println("invalid topleft")
-    } else if topright.X < c.X || topright.Y > c.Y {
-      println("invalid topright")
-    } else if botleft.X > c.X || botleft.Y < c.Y {
-      println("invalid botleft")
-    } else if botright.X < c.X || botright.Y < c.Y {
-      println("invalid botright")
-    } else {
-      break
+      // validate the corners
+      fmt.Printf("center: %v\ntl: %v\ntr: %v\nbl: %v\nbr: %v\n",
+                 c, topleft, topright, botleft, botright)
+      if topleft.X > c.X || topleft.Y > c.Y {
+        println("invalid topleft")
+      } else if topright.X < c.X || topright.Y > c.Y {
+        println("invalid topright")
+      } else if botleft.X > c.X || botleft.Y < c.Y {
+        println("invalid botleft")
+      } else if botright.X < c.X || botright.Y < c.Y {
+        println("invalid botright")
+      } else {
+        game(topleft, topright, botleft, botright)
+        return
+      }
+      println("make sure the webcam sees the whole screen")
+      time.Sleep(time.Second)
     }
 
-    println("make sure the webcam sees the whole screen")
+    println("all bad...")
     time.Sleep(2 * time.Second)
   }
-
-  game(topleft, topright, botleft, botright)
 }
 
 func main() {

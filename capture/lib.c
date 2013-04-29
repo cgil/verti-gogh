@@ -88,7 +88,7 @@ int elapsed(struct timeval *start, struct timeval *end) {
          (end->tv_usec - start->tv_usec))/1000;
 }
 
-void findmin(int *row, int *col) {
+double findmin(int *row, int *col) {
   assert(nxt == HEIGHT);
 
   int i, j;
@@ -117,6 +117,7 @@ void findmin(int *row, int *col) {
 
   *row = mini;
   *col = minj;
+  return min;
 }
 
 void calibrate() {

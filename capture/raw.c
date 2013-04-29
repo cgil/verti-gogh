@@ -59,11 +59,20 @@ static int process_image(processor_t *proc, void *p, int size) {
   assert(size == WIDTH * HEIGHT * 2);
   reset();
 
+  /* static int frames = 0; */
+  /* static char fname[1024]; */
+  /* sprintf(fname, "frame-%04d.yuv", frames++); */
+  /* int fd = open(fname, O_CREAT | O_WRONLY); */
+  /* assert(fd > 0); */
+  /* write(fd, p, size); */
+  /* close(fd); */
+
   char *buf = p;
   int i;
   for (i = 0; i < HEIGHT; i++) {
     process_yuv(buf + i * WIDTH * 2, WIDTH * 2);
   }
+
   return proc();
 }
 
