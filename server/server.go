@@ -1,10 +1,11 @@
-package main
+package server
 
 import "github.com/ziutek/serial"
 import "io/ioutil"
 import "net/http"
 import "os"
 import "time"
+import _ "net/http/pprof"
 import ws "code.google.com/p/go.net/websocket"
 
 type LightningMcQueen struct {
@@ -12,6 +13,13 @@ type LightningMcQueen struct {
   updown int
   rightleft int
 }
+
+type Command int
+
+const (
+  Calibrate Command = iota
+  Reset
+)
 
 func (car *LightningMcQueen) stop()          { car.send("1132121211212") }
 func (car *LightningMcQueen) right()         { car.send("1131122211112") }
@@ -39,7 +47,7 @@ func (car *LightningMcQueen) send(s string) {
   car.toy.transmit(cmd[0:28])
 }
 
-func main() {
+func Run(chan Command) {
   var car *LightningMcQueen
 
   s, err := serial.Open("/dev/ttyACM0")

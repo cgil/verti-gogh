@@ -8,21 +8,18 @@
 //
 // If you're just starting with xgbutil, I highly recommend checking out the
 // other examples before attempting to digest this one.
-package main
+package game
 
 import (
   "bufio"
   "bytes"
+  "flag"
   "fmt"
   "image"
-  "log"
   "math/rand"
   "os"
   "os/exec"
   "time"
-  "net/http"
-  "flag"
-  _ "net/http/pprof"
 
   "github.com/BurntSushi/xgb/xproto"
   "github.com/BurntSushi/xgbutil"
@@ -31,6 +28,8 @@ import (
   "github.com/BurntSushi/xgbutil/xevent"
   "github.com/BurntSushi/xgbutil/xgraphics"
   "github.com/BurntSushi/xgbutil/xwindow"
+
+  "github.com/cgil/verti-gogh/server"
 )
 
 const (
@@ -71,7 +70,15 @@ type Dot struct {
 }
 const XS = 6
 const YS = 4
-var dots [XS][YS]Dot
+
+type Game struct {
+  dots [XS][YS]Dot
+  cmd   *exec.Cmd
+  topleft image.Point
+  topright image.Point
+  botleft image.Point
+  botright image.Point
+}
 
 func circle(cx, cy, size int, color xgraphics.BGRA) {
   tipRect := midRect(cx, cy, size, size, width, height)
@@ -101,7 +108,7 @@ func circle(cx, cy, size int, color xgraphics.BGRA) {
   tip.XPaint(win.Id)
 }
 
-func atpoint(x, y int) {
+func (g *Game) atpoint(x, y int) {
   px := width / (XS + 1)
   py := height / (YS + 1)
 
@@ -109,7 +116,7 @@ func atpoint(x, y int) {
   yn := (y + py / 2) * (YS + 1) / height
   if xn == 0 || yn == 0 || xn > XS || yn > YS { return }
 
-  d := &dots[xn - 1][yn - 1]
+  d := &g.dots[xn - 1][yn - 1]
   dx := d.x - x
   dy := d.y - y
   if !d.found && dx * dx + dy * dy < HIT_THRESH {
@@ -118,27 +125,32 @@ func atpoint(x, y int) {
   }
 }
 
-func game(topleft, topright, botleft, botright image.Point) {
+func (g *Game) stop() {
+  mousebind.Detach(X, X.RootWin())
+  g.cmd.Process.Kill()
+  g.cmd.Wait()
+}
+
+func (g *Game) game() {
   // Use the bounds to draw a small dot where we think the black dot on the
   // screen is
   go func() {
     if !*webcam { return }
-    pmin := image.Point { X: max(topleft.X, botleft.X),
-                          Y: max(topleft.Y, topright.Y) }
-    pmax := image.Point { X: min(topright.X, botright.X),
-                          Y: min(botleft.Y, botright.Y) }
-    cmd := exec.Command("./capture/capture_raw_frames", "0x1c1f24",
-                        fmt.Sprintf("%d", pmin.X),
-                        fmt.Sprintf("%d", pmin.Y),
-                        fmt.Sprintf("%d", pmax.X),
-                        fmt.Sprintf("%d", pmax.Y))
-    fmt.Printf("%v\n", cmd.Args)
-    cmd.Stderr = os.Stderr
-    out, err := cmd.StdoutPipe()
+    pmin := image.Point { X: max(g.topleft.X, g.botleft.X),
+                          Y: max(g.topleft.Y, g.topright.Y) }
+    pmax := image.Point { X: min(g.topright.X, g.botright.X),
+                          Y: min(g.botleft.Y, g.botright.Y) }
+    g.cmd = exec.Command("./capture/capture_raw_frames", "0x1c1f24",
+                         fmt.Sprintf("%d", pmin.X),
+                         fmt.Sprintf("%d", pmin.Y),
+                         fmt.Sprintf("%d", pmax.X),
+                         fmt.Sprintf("%d", pmax.Y))
+    g.cmd.Stderr = os.Stderr
+    out, err := g.cmd.StdoutPipe()
     fatal(err)
-    in, err := cmd.StdinPipe()
+    in, err := g.cmd.StdinPipe()
     fatal(err)
-    fatal(cmd.Start())
+    fatal(g.cmd.Start())
 
     buf := bufio.NewReader(out)
     var p image.Point
@@ -149,10 +161,12 @@ func game(topleft, topright, botleft, botright image.Point) {
       // signal readiness and then wait for it to become available
       in.Write([]byte("go\n"))
       s, err := buf.ReadString('\n')
-      fatal(err)
+      if err != nil {
+        println("tracker died")
+        break
+      }
 
       var myx, myy int
-      println(s)
       n, err := fmt.Sscanf(s, "%d %d", &myy, &myx)
       fatal(err)
       if n != 2 { panic("didn't get 2 ints") }
@@ -171,9 +185,11 @@ func game(topleft, topright, botleft, botright image.Point) {
       p.X = myx
       p.Y = myy
       circle(p.X, p.Y, 10, marker)
-      atpoint(p.X, p.Y)
+      g.atpoint(p.X, p.Y)
     }
   }()
+
+  clearCanvas()
 
   // Draw a black dot on the cursor
   curx, cury := 0, 0
@@ -184,19 +200,19 @@ func game(topleft, topright, botleft, botright image.Point) {
     circle(curx, cury, 5, bg)
     circle(x, y, 5, car)
     curx, cury = x, y
-    atpoint(x, y)
+    g.atpoint(x, y)
   }).Connect(X, win.Id)
 
   for x := 0; x < XS; x++ {
     for y := 0; y < YS; y++ {
-      dots[x][y].found = false
-      dots[x][y].good = (rand.Int() & 0x1 == 0)
+      g.dots[x][y].found = false
+      g.dots[x][y].good = (rand.Int() & 0x1 == 0)
 
       xloc := width * (x + 1) / (XS + 1)
       yloc := height * (y + 1) / (YS + 1)
-      dots[x][y].x = xloc
-      dots[x][y].y = yloc
-      if dots[x][y].good {
+      g.dots[x][y].x = xloc
+      g.dots[x][y].y = yloc
+      if g.dots[x][y].good {
         circle(xloc, yloc, 40, green)
       } else {
         circle(xloc, yloc, 40, red)
@@ -269,12 +285,8 @@ func center() (image.Point, []xgraphics.BGRA) {
   panic("not here")
 }
 
-func calibrate() {
-  var topleft, topright, botleft, botright image.Point
-  if !*webcam {
-    game(topleft, topright, botleft, botright)
-    return
-  }
+func (g *Game) calibrate() {
+  if !*webcam { return }
 
   corner := func(x, y int, color xgraphics.BGRA) image.Point{
     circle(x, y, calsize, color)
@@ -291,24 +303,23 @@ func calibrate() {
 
     for _, color := range colors {
       // find the corners
-      topleft = corner(calsize / 2, calsize / 2, color)
-      topright = corner(width - calsize / 2, calsize / 2, color)
-      botleft = corner(calsize / 2, height - calsize / 2, color)
-      botright = corner(width - calsize / 2, height - calsize / 2, color)
+      g.topleft = corner(calsize / 2, calsize / 2, color)
+      g.topright = corner(width - calsize / 2, calsize / 2, color)
+      g.botleft = corner(calsize / 2, height - calsize / 2, color)
+      g.botright = corner(width - calsize / 2, height - calsize / 2, color)
 
       // validate the corners
       fmt.Printf("center: %v\ntl: %v\ntr: %v\nbl: %v\nbr: %v\n",
-                 c, topleft, topright, botleft, botright)
-      if topleft.X > c.X || topleft.Y > c.Y {
+                 c, g.topleft, g.topright, g.botleft, g.botright)
+      if g.topleft.X > c.X || g.topleft.Y > c.Y {
         println("invalid topleft")
-      } else if topright.X < c.X || topright.Y > c.Y {
+      } else if g.topright.X < c.X || g.topright.Y > c.Y {
         println("invalid topright")
-      } else if botleft.X > c.X || botleft.Y < c.Y {
+      } else if g.botleft.X > c.X || g.botleft.Y < c.Y {
         println("invalid botleft")
-      } else if botright.X < c.X || botright.Y < c.Y {
+      } else if g.botright.X < c.X || g.botright.Y < c.Y {
         println("invalid botright")
       } else {
-        game(topleft, topright, botleft, botright)
         return
       }
       println("make sure the webcam sees the whole screen")
@@ -320,9 +331,7 @@ func calibrate() {
   }
 }
 
-func main() {
-  flag.Parse()
-
+func Run(c chan server.Command) {
   var err error
   X, err = xgbutil.NewConn()
   fatal(err)
@@ -339,10 +348,20 @@ func main() {
   err = ewmh.WmStateReq(X, win.Id, ewmh.StateToggle, "_NET_WM_STATE_FULLSCREEN")
   fatal(err)
 
-  // profiling
-  go func() { log.Println(http.ListenAndServe("localhost:6060", nil)) }()
-
   // calibrate somewhere else and consume this thread for the main loop
-  go calibrate()
+  go func() {
+    var g Game
+    g.calibrate()
+    for cmd := range c {
+      switch cmd {
+        case server.Reset:
+          g.stop()
+          g.game()
+        case server.Calibrate:
+          g.stop()
+          g.calibrate()
+      }
+    }
+  }()
   xevent.Main(X)
 }
