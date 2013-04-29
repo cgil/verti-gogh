@@ -59,13 +59,13 @@ func Run(chan Command) {
     car.right()
   }
 
-  f, err := os.Open("./index2.html")
+  f, err := os.Open("./server/index2.html")
   if err != nil { panic(err) }
   index, err := ioutil.ReadAll(f)
   if err != nil { panic(err) }
   f.Close()
 
-  f, err = os.Open("./control.html")
+  f, err = os.Open("./server/control.html")
   if err != nil { panic(err) }
   control, err := ioutil.ReadAll(f)
   if err != nil { panic(err) }
