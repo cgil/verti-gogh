@@ -1,13 +1,17 @@
 package server
 
+import "fmt"
 import "github.com/ziutek/serial"
 import "image"
 import "image/color"
 import "image/jpeg"
+import "io"
 import "io/ioutil"
 import "net/http"
 import "os"
 import "os/exec"
+import "strconv"
+import "strings"
 import "time"
 import _ "net/http/pprof"
 import ws "code.google.com/p/go.net/websocket"
@@ -22,11 +26,16 @@ type LightningMcQueen struct {
 }
 
 type Command int
+type Packet struct {
+  Cmd Command
+  R, G, B uint8
+}
 
 const (
   Calibrate Command = iota
   Reset
   Stop
+  Target
 )
 
 func (car *LightningMcQueen) stop()          { car.send("1132121211212") }
@@ -55,7 +64,7 @@ func (car *LightningMcQueen) send(s string) {
   car.toy.transmit(cmd[0:28])
 }
 
-func Run(c chan Command) {
+func Run(c chan Packet, webcam bool) {
   var car *LightningMcQueen
 
   s, err := serial.Open("/dev/ttyACM0")
@@ -111,10 +120,18 @@ func Run(c chan Command) {
   })
   http.HandleFunc("/capture.jpg", func(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
-    cmd := exec.Command("./capture/yuyv")
-    out, err := cmd.StdoutPipe()
-    if err != nil { panic(err) }
-    cmd.Start()
+    var out io.ReadCloser
+    var err error
+    if webcam {
+      cmd := exec.Command("./capture/yuyv")
+      out, err = cmd.StdoutPipe()
+      if err != nil { panic(err) }
+      cmd.Start()
+      defer cmd.Wait()
+    } else {
+      out, err = os.Open("./capture/image.yuv")
+      if err != nil { panic(err) }
+    }
 
     im := image.NewRGBA(image.Rect(0, 0, WIDTH, HEIGHT))
     buf := make([]byte, WIDTH * 2)
@@ -133,7 +150,6 @@ func Run(c chan Command) {
       }
     }
     out.Close()
-    cmd.Wait()
     jpeg.Encode(w, im, nil)
   })
 
@@ -162,9 +178,25 @@ func Run(c chan Command) {
             case "6":  car.updown = -1; car.rightleft = 0
             case "7":  car.updown = -1; car.rightleft = 1
 
-            case "calibrate": c <- Calibrate
-            case "reset": c <- Reset
-            case "stop": c <- Stop
+            case "calibrate": c <- Packet { Cmd: Calibrate }
+            case "reset": c <- Packet { Cmd: Reset }
+            case "stop": c <- Packet { Cmd: Stop }
+
+            default:
+              p := Packet { Cmd: Target }
+              arr := strings.Split(s, ":")
+              if arr[0] == "target" && len(arr) == 4 {
+                n, err := strconv.ParseUint(arr[1], 10, 8)
+                if err != nil { continue }
+                p.R = uint8(n)
+                n, err = strconv.ParseUint(arr[2], 10, 8)
+                if err != nil { continue }
+                p.G = uint8(n)
+                n, err = strconv.ParseUint(arr[3], 10, 8)
+                if err != nil { continue }
+                p.B = uint8(n)
+                c <- p
+              }
           }
       }
 

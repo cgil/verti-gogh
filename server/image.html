@@ -75,6 +75,34 @@
       canvas.addEventListener('pointerout', up, false);
     </script>
 
+    <style>
+      a { font-size: 150%; }
+    </style>
+
+    <a id='submit' href='#'>set target</a>
+    <br/>
+    <br/>
+
+    <script type='text/javascript'>
+      (function() {
+        var host = "ws://" + document.location.host + '/ws';
+        socket = new WebSocket(host);
+        socket.onopen = function() { console.log('opened!'); };
+        socket.onclose = function() {
+          document.body.innerHTML = 'lost connection';
+        };
+        socket.onerror = function() {
+          document.body.innerHTML = 'lost connection';
+        };
+        document.getElementById('submit').onclick = function() {
+          var r = document.getElementById('r').innerHTML;
+          var g = document.getElementById('g').innerHTML;
+          var b = document.getElementById('b').innerHTML;
+          socket.send('target:' + r + ':' + g + ':' + b);
+        };
+      })();
+    </script>
+
     <a href='/'>controller</a>
     <a href='/control'>admin</a>
   </body>

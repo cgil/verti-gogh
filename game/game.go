@@ -57,7 +57,7 @@ var X *xgbutil.XUtil
 var win *xwindow.Window
 var canvas *xgraphics.Image
 
-var webcam = flag.Bool("webcam", false, "enable webcam")
+var Webcam = flag.Bool("Webcam", false, "enable Webcam")
 
 type Dot struct {
   good bool
@@ -75,6 +75,10 @@ type Game struct {
   topright image.Point
   botleft image.Point
   botright image.Point
+
+  tr uint8
+  tg uint8
+  tb uint8
 }
 
 func circle(cx, cy, size int, color xgraphics.BGRA) {
@@ -135,12 +139,13 @@ func (g *Game) game() {
   // Use the bounds to draw a small dot where we think the black dot on the
   // screen is
   go func() {
-    if !*webcam { return }
+    if !*Webcam { return }
     pmin := image.Point { X: max(g.topleft.X, g.botleft.X),
                           Y: max(g.topleft.Y, g.topright.Y) }
     pmax := image.Point { X: min(g.topright.X, g.botright.X),
                           Y: min(g.botleft.Y, g.botright.Y) }
-    g.cmd = exec.Command("./capture/capture_raw_frames", "0x1c1f24",
+    g.cmd = exec.Command("./capture/capture_raw_frames",
+                         fmt.Sprintf("0x%02d%02d%02d", g.tr, g.tg, g.tb),
                          fmt.Sprintf("%d", pmin.X),
                          fmt.Sprintf("%d", pmin.Y),
                          fmt.Sprintf("%d", pmax.X),
@@ -286,7 +291,7 @@ func center() (image.Point, []xgraphics.BGRA) {
 }
 
 func (g *Game) calibrate() {
-  if !*webcam { return }
+  if !*Webcam { return }
 
   corner := func(x, y int, color xgraphics.BGRA) image.Point{
     circle(x, y, calsize, color)
@@ -322,7 +327,7 @@ func (g *Game) calibrate() {
       } else {
         return
       }
-      println("make sure the webcam sees the whole screen")
+      println("make sure the Webcam sees the whole screen")
       time.Sleep(time.Second)
     }
 
@@ -331,7 +336,7 @@ func (g *Game) calibrate() {
   }
 }
 
-func Run(c chan server.Command) {
+func Run(c chan server.Packet) {
   select {}
   var err error
   X, err = xgbutil.NewConn()
@@ -352,16 +357,21 @@ func Run(c chan server.Command) {
   // calibrate somewhere else and consume this thread for the main loop
   go func() {
     var g Game
+    g.tr = 0x1c
+    g.tg = 0x1f
+    g.tb = 0x24
     for cmd := range c {
-      switch cmd {
+      g.stop()
+      switch cmd.Cmd {
         case server.Reset:
-          g.stop()
           g.game()
         case server.Calibrate:
-          g.stop()
           g.calibrate()
+        case server.Target:
+          g.tr = cmd.R
+          g.tg = cmd.G
+          g.tb = cmd.B
         case server.Stop:
-          g.stop()
       }
     }
   }()
