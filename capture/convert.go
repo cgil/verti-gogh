@@ -9,9 +9,7 @@ const WIDTH = 320
 const HEIGHT = 240
 
 func main() {
-  f, err := os.Open(os.Args[1])
-  if err != nil { panic(err) }
-  defer f.Close()
+  f := os.Stdin
 
   im := image.NewRGBA(image.Rect(0, 0, WIDTH, HEIGHT))
 
@@ -32,9 +30,5 @@ func main() {
     }
   }
 
-  out, err := os.Create("out.jpeg")
-  if err != nil { panic(err) }
-  defer out.Close()
-
-  jpeg.Encode(out, im, nil)
+  jpeg.Encode(os.Stdout, im, nil)
 }

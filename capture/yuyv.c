@@ -56,11 +56,7 @@ static int xioctl(int fh, int request, void *arg) {
 }
 
 static int process_image(void *p, int size) {
-  FILE *f = fopen("image.yuv", "w");
-  assert(f != NULL);
-  int ret = fwrite(p, size, 1, f);
-  assert(ret == 1);
-  fclose(f);
+  write(STDOUT_FILENO, p, size);
   return 0;
 }
 

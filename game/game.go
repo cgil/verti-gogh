@@ -41,9 +41,6 @@ const (
   CALIBRATE_HIT_THRESH  = 5
   CALIBRATE_DIST_THRESH = 36
 
-  MONSTER_UPDATE = 200 * time.Millisecond
-  MONSTER_CHANGE = 5 * time.Second
-
   HIT_THRESH = 2500
 )
 
@@ -127,8 +124,11 @@ func (g *Game) atpoint(x, y int) {
 
 func (g *Game) stop() {
   mousebind.Detach(X, X.RootWin())
-  g.cmd.Process.Kill()
-  g.cmd.Wait()
+  if g.cmd != nil {
+    g.cmd.Process.Kill()
+    g.cmd.Wait()
+    g.cmd = nil
+  }
 }
 
 func (g *Game) game() {
@@ -157,7 +157,7 @@ func (g *Game) game() {
 
     buf.ReadString('\n') // discard first point
     outliers := 0
-    for _ = range time.Tick(200 * time.Millisecond) {
+    for _ = range time.Tick(100 * time.Millisecond) {
       // signal readiness and then wait for it to become available
       in.Write([]byte("go\n"))
       s, err := buf.ReadString('\n')
@@ -332,6 +332,7 @@ func (g *Game) calibrate() {
 }
 
 func Run(c chan server.Command) {
+  select {}
   var err error
   X, err = xgbutil.NewConn()
   fatal(err)
@@ -351,7 +352,6 @@ func Run(c chan server.Command) {
   // calibrate somewhere else and consume this thread for the main loop
   go func() {
     var g Game
-    g.calibrate()
     for cmd := range c {
       switch cmd {
         case server.Reset:
@@ -360,6 +360,8 @@ func Run(c chan server.Command) {
         case server.Calibrate:
           g.stop()
           g.calibrate()
+        case server.Stop:
+          g.stop()
       }
     }
   }()

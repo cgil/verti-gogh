@@ -9,13 +9,30 @@
           var host = "ws://" + document.location.host + '/ws';
           socket = new WebSocket(host);
           socket.onopen = function() { console.log('opened!'); };
-          socket.onclose = function() { console.log('closed!'); };
-          socket.onerror = function() { console.log('errord!'); };
+          socket.onclose = function() {
+            document.body.innerHTML = 'lost connection';
+          };
+          socket.onerror = function() {
+            document.body.innerHTML = 'lost connection';
+          };
       }
       init();
     </script>
+    <style>
+      button {
+        clear: both;
+        display: block;
+        width: 200px;
+        height: 100px;
+        font-size: 20px;
+        margin: 40px;
+      }
+    </style>
   </head>
   <body>
-    <input type='button' value="fan" onclick="socket.send('fan')" />
+    <button onclick="socket.send('fan')">fan</button>
+    <button onclick="socket.send('calibrate')">calibrate</button>
+    <button onclick="socket.send('reset')">reset game</button>
+    <button onclick="socket.send('stop')">stop</button>
   </body>
 </html>

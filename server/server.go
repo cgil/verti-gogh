@@ -1,12 +1,19 @@
 package server
 
 import "github.com/ziutek/serial"
+import "image"
+import "image/color"
+import "image/jpeg"
 import "io/ioutil"
 import "net/http"
 import "os"
+import "os/exec"
 import "time"
 import _ "net/http/pprof"
 import ws "code.google.com/p/go.net/websocket"
+
+const WIDTH = 320
+const HEIGHT = 240
 
 type LightningMcQueen struct {
   toy *IrToy
@@ -19,6 +26,7 @@ type Command int
 const (
   Calibrate Command = iota
   Reset
+  Stop
 )
 
 func (car *LightningMcQueen) stop()          { car.send("1132121211212") }
@@ -47,7 +55,7 @@ func (car *LightningMcQueen) send(s string) {
   car.toy.transmit(cmd[0:28])
 }
 
-func Run(chan Command) {
+func Run(c chan Command) {
   var car *LightningMcQueen
 
   s, err := serial.Open("/dev/ttyACM0")
@@ -71,6 +79,12 @@ func Run(chan Command) {
   if err != nil { panic(err) }
   f.Close()
 
+  f, err = os.Open("./server/image.html")
+  if err != nil { panic(err) }
+  imhtml, err := ioutil.ReadAll(f)
+  if err != nil { panic(err) }
+  f.Close()
+
   event := make(chan string, 0)
 
   http.Handle("/ws", ws.Handler(func(w *ws.Conn) {
@@ -81,7 +95,7 @@ func Run(chan Command) {
     }
   }))
 
-  srv := http.FileServer(http.Dir("./static"))
+  srv := http.FileServer(http.Dir("./server/static"))
   http.Handle("/static/", http.StripPrefix("/static", srv))
   http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
@@ -90,6 +104,37 @@ func Run(chan Command) {
   http.HandleFunc("/control", func(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
     w.Write(control)
+  })
+  http.HandleFunc("/image", func(w http.ResponseWriter, r *http.Request) {
+    w.WriteHeader(http.StatusOK)
+    w.Write(imhtml)
+  })
+  http.HandleFunc("/capture.jpg", func(w http.ResponseWriter, r *http.Request) {
+    w.WriteHeader(http.StatusOK)
+    cmd := exec.Command("./capture/yuyv")
+    out, err := cmd.StdoutPipe()
+    if err != nil { panic(err) }
+    cmd.Start()
+
+    im := image.NewRGBA(image.Rect(0, 0, WIDTH, HEIGHT))
+    buf := make([]byte, WIDTH * 2)
+    for i := 0; i < HEIGHT; i++ {
+      n, err := out.Read(buf)
+      if err != nil { panic(err) }
+      if n != len(buf) { panic("short read") }
+
+      for j := uint(0); j < WIDTH; j++ {
+        yi := j * 2;
+        cbi := (j & 0xfffffffe) * 2 + 1
+        cri := (j & 0xfffffffe) * 2 + 3
+
+        color := color.YCbCr{ Y: buf[yi], Cb: buf[cbi], Cr: buf[cri] }
+        im.Set(int(j), i, color)
+      }
+    }
+    out.Close()
+    cmd.Wait()
+    jpeg.Encode(w, im, nil)
   })
 
   go func() {
@@ -116,6 +161,10 @@ func Run(chan Command) {
             case "5":  car.updown = -1; car.rightleft = -1
             case "6":  car.updown = -1; car.rightleft = 0
             case "7":  car.updown = -1; car.rightleft = 1
+
+            case "calibrate": c <- Calibrate
+            case "reset": c <- Reset
+            case "stop": c <- Stop
           }
       }
 

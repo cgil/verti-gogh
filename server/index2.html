@@ -68,8 +68,12 @@ function init() {
     var host = "ws://" + document.location.host + '/ws';
     socket = new WebSocket(host);
     socket.onopen = function() { console.log('opened!'); };
-    socket.onclose = function() { console.log('closed!'); };
-    socket.onerror = function() { console.log('errord!'); };
+    socket.onclose = function() {
+      document.body.innerHTML = 'lost connection';
+    };
+    socket.onerror = function() {
+      document.body.innerHTML = 'lost connection';
+    };
 }
 
 function resetCanvas(e) {

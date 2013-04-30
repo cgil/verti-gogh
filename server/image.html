@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang=en>
+  <head>
+    <meta charset=utf-8>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <script type='text/javascript' src="/static/hand.minified.js"></script>
+  </head>
+  <body>
+    <canvas id='me' height=240 width=320></canvas>
+
+    <div>
+      r: <span id='r'></span><br/>
+      g: <span id='g'></span><br/>
+      b: <span id='b'></span><br/>
+    </div>
+
+    <script type='text/javascript'>
+      var canvas = document.getElementById("me");
+      var context = canvas.getContext("2d");
+
+      var imageObj = new Image();
+      imageObj.onload = function(){
+          context.drawImage(imageObj, 0, 0);
+      };
+      imageObj.src = "/capture.jpg";
+      var pressed = false;
+
+      function down(e) {
+        pressed = true;
+        e.preventDefault();
+      }
+      function up(e) {
+        pressed = false;
+        e.preventDefault();
+        move(e);
+      }
+      function move(e) {
+        context.drawImage(imageObj, 0, 0);
+
+        e.preventDefault()
+        // not so sure about these... might need to offset them or so
+        var x = e.layerX - 50;
+        var y = e.layerY - 50;
+
+        // set color now
+        var canvasColor = context.getImageData(x, y, 1, 1).data; // rgba e [0,255]
+
+        if (!pressed) {
+          context.beginPath();
+          context.arc(x, y, 3, 0, 2 * Math.PI, false);
+          context.fillStyle = 'green';
+          context.fill();
+        } else {
+          context.beginPath();
+          context.lineWidth = '2';
+          context.strokeStyle = 'red';
+          context.moveTo(x + 60, y);
+          context.lineTo(x - 60, y);
+          context.moveTo(x, y + 60);
+          context.lineTo(x, y - 60);
+          context.stroke();
+        }
+
+        var r = canvasColor[0];
+        var g = canvasColor[1];
+        var b = canvasColor[2];
+        document.getElementById('r').innerHTML = r;
+        document.getElementById('g').innerHTML = g;
+        document.getElementById('b').innerHTML = b;
+      }
+
+      canvas.addEventListener('pointermove', move, false);
+      canvas.addEventListener('pointerdown', down, false);
+      canvas.addEventListener('pointerup', up, false);
+      canvas.addEventListener('pointerout', up, false);
+    </script>
+  </body>
+</html>
