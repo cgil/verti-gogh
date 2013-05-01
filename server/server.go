@@ -49,7 +49,7 @@ func (car *LightningMcQueen) backwardright() { car.send("1131111212212") }
 func (car *LightningMcQueen) backwardleft()  { car.send("1131111211121") }
 
 func (car *LightningMcQueen) send(s string) {
-  var cmd [28]byte
+  var cmd [26]byte
   if len(s) != 13 { panic("bad string") }
   for i, c := range s {
     switch c {
@@ -59,8 +59,7 @@ func (car *LightningMcQueen) send(s string) {
       default: panic("bad char: " + string(c))
     }
   }
-  cmd[27] = 23
-  car.toy.transmit(cmd[0:28])
+  car.toy.transmit(cmd[0:26])
 }
 
 func Run(c chan Packet, webcam bool) {

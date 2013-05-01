@@ -43,28 +43,35 @@ func (t *IrToy) reset() {
 }
 
 func (t *IrToy) transmit(b []byte) {
-  b = append(append(b, 0xff), 0xff)
-  t.acknowledge([]byte{0x26, 0x25, 0x24, 0x03})
-  t.acknowledge(b)
-
   var ack [3]byte
-  t.read(ack[0:3])
-  if ack[0] != 't' { panic("didn't receive a 't'") }
-  if (int(ack[1]) << 8) | int(ack[2]) != len(b) { panic("didn't send all bytes?") }
-
+  // Enable handshakes, transmit, and whatnot. The acknowledgement is the size
+  // of the internal buffer (amount of bytes we can send)
+  t.write([]byte{0x26, 0x25, 0x24, 0x03})
   t.read(ack[0:1])
-  if ack[0] != 'C' { panic("didn't actually complete") }
-}
+  size := int(ack[0])
+  if size < 0 { panic("bad buffer size") }
 
-func (t *IrToy) acknowledge(b []byte) {
-  var ack [1]byte
-  for i := 0; i < len(b); i += 62 {
-    end := i + 62
+  // Send all the data in the buffer-size chunks, reading off acknowledgements.
+  for i := 0; i < len(b); i += size {
+    end := i + size
     if end > len(b) { end = len(b) }
     t.write(b[i:end])
+    if end == len(b) {
+      t.write([]byte{0xff, 0xff})
+    }
+
     t.read(ack[0:1])
-    if ack[0] != 0x3e {
-      panic("back acknowledgement")
+    if int(ack[0]) != size {
+      panic("bad acknowledgement")
     }
   }
+
+  // Finally read the transmit count and completion flags
+  t.read(ack[0:3])
+  if ack[0] != 't' { panic("didn't receive a 't'") }
+  if (int(ack[1]) << 8) | int(ack[2]) != len(b) + 2 {
+    panic("didn't send all bytes?")
+  }
+  t.read(ack[0:1])
+  if ack[0] != 'C' { panic("didn't actually complete") }
 }
