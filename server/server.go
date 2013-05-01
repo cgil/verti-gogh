@@ -160,7 +160,11 @@ func Run(c chan Packet, webcam bool) {
           if car == nil { continue }
         case s := <-event:
           if car == nil { continue }
+          println(s)
           car.stop()
+          time.Sleep(25 * time.Millisecond)
+          car.stop()
+          time.Sleep(25 * time.Millisecond)
           switch s {
             case "-1":  car.updown = 0;  car.rightleft = 0
             // case "0":   car.updown = 0;  car.rightleft = 1
@@ -216,6 +220,25 @@ func Run(c chan Packet, webcam bool) {
       } else if car.updown == 1 && car.rightleft == 1 {
         car.forwardright()
       }
+      time.Sleep(25 * time.Millisecond)
+      if car.updown == 0 && car.rightleft == 1 {
+        car.right()
+      } else if car.updown == 0 && car.rightleft == -1 {
+        car.left()
+      } else if car.updown == 1 && car.rightleft == 0 {
+        car.forward()
+      } else if car.updown == -1 && car.rightleft == 0 {
+        car.backward()
+      } else if car.updown == -1 && car.rightleft == -1 {
+        car.backwardleft()
+      } else if car.updown == 1 && car.rightleft == -1 {
+        car.forwardleft()
+      } else if car.updown == -1 && car.rightleft == 1 {
+        car.backwardright()
+      } else if car.updown == 1 && car.rightleft == 1 {
+        car.forwardright()
+      }
+      time.Sleep(25 * time.Millisecond)
     }
   }()
 

@@ -57,7 +57,7 @@ var X *xgbutil.XUtil
 var win *xwindow.Window
 var canvas *xgraphics.Image
 
-var Webcam = flag.Bool("Webcam", false, "enable Webcam")
+var Webcam = flag.Bool("webcam", false, "enable Webcam")
 
 type Dot struct {
   good bool
@@ -140,6 +140,7 @@ func (g *Game) game() {
   // screen is
   go func() {
     if !*Webcam { return }
+    println("tracking", g.tr, g.tg, g.tb)
     pmin := image.Point { X: max(g.topleft.X, g.botleft.X),
                           Y: max(g.topleft.Y, g.topright.Y) }
     pmax := image.Point { X: min(g.topright.X, g.botright.X),
@@ -250,7 +251,6 @@ func center() (image.Point, []xgraphics.BGRA) {
   buckets := make([]Bucket, 0)
 
   for {
-    fmt.Printf("%v\n", buckets)
     // Look through the buckets to see if we have a lot of hits somewhere
     for _, bkt := range buckets {
       if len(bkt.colors) > CALIBRATE_HIT_THRESH {
@@ -337,7 +337,6 @@ func (g *Game) calibrate() {
 }
 
 func Run(c chan server.Packet) {
-  select {}
   var err error
   X, err = xgbutil.NewConn()
   fatal(err)
@@ -371,6 +370,7 @@ func Run(c chan server.Packet) {
           g.tr = cmd.R
           g.tg = cmd.G
           g.tb = cmd.B
+          println("requesting", g.tr, g.tg, g.tb)
         case server.Stop:
       }
     }
