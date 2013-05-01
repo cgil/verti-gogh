@@ -1,6 +1,5 @@
 package server
 
-import "fmt"
 import "github.com/ziutek/serial"
 import "image"
 import "image/color"
